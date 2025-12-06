@@ -1,0 +1,279 @@
+import React, { useState, useMemo, useCallback } from 'react'
+import { motion } from 'framer-motion'
+import { Plus } from 'lucide-react'
+import { useApp } from '@/contexts/AppContext'
+import { Event, EventStatus } from '@/types'
+import EventModal from '@/components/events/EventModal'
+import EventReadOnlyModal from '@/components/events/EventReadOnlyModal'
+
+// Composants dashboard selon la nouvelle hiérarchie
+import UrgentEventsSection from '@/components/dashboard/UrgentEventsSection'
+import InvoicingSection from '@/components/dashboard/InvoicingSection'
+import StrategicPlanningSection from '@/components/dashboard/StrategicPlanningSection'
+import BusinessMetricsSection from '@/components/dashboard/BusinessMetricsSection'
+
+// 🚨 Nouveau système d'urgence intelligent
+import { SmartUrgencyCalculator } from '@/lib/smart-urgency'
+
+interface HomeProps {
+  navigate?: (page: string, params?: any) => void
+}
+
+// 🚨 SUPPRIMÉ : Ancienne fonction calculateUrgency
+// Maintenant on utilise SmartUrgencyCalculator.calculateUrgency()
+  const now = new Date()
+  const eventDate = new Date(event.date)
+  const daysUntilEvent = Math.ceil((eventDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+  
+  if (event.status === EventStatus.CANCELLED) {
+    return { level: 0, label: 'Annulé', color: 'gray', priority: 'none' }
+  }
+  if (event.status === EventStatus.COMPLETED) {
+    return { level: 1, label: 'Terminé', color: 'green', priority: 'archive' }
+  }
+  
+  // Événements passés non terminés = CRITIQUE
+  if (daysUntilEvent < 0 && event.status !== EventStatus.COMPLETED) {
+    return { level: 5, label: 'EN RETARD', color: 'red', priority: 'critical' }
+  }
+  
+  // Événements aujourd'hui
+  if (daysUntilEvent === 0) {
+    if (event.status === EventStatus.DRAFT) {
+      return { level: 5, label: 'AUJOURD\'HUI - NON CONFIRMÉ', color: 'red', priority: 'critical' }
+    }
+    if (event.status === EventStatus.CONFIRMED) {
+      return { level: 4, label: 'AUJOURD\'HUI - CONFIRMÉ', color: 'orange', priority: 'high' }
+    }
+    if (event.status === EventStatus.IN_PROGRESS) {
+      return { level: 3, label: 'EN COURS AUJOURD\'HUI', color: 'blue', priority: 'medium' }
+    }
+  }
+  
+  // Événements demain
+  if (daysUntilEvent === 1) {
+    if (event.status === EventStatus.DRAFT) {
+      return { level: 4, label: 'DEMAIN - NON CONFIRMÉ', color: 'orange', priority: 'high' }
+    }
+    if (event.status === EventStatus.CONFIRMED) {
+      return { level: 3, label: 'DEMAIN - CONFIRMÉ', color: 'yellow', priority: 'medium' }
+    }
+  }
+  
+  // Événements cette semaine (2-7 jours)
+  if (daysUntilEvent >= 2 && daysUntilEvent <= 7) {
+    if (event.status === EventStatus.DRAFT) {
+      return { level: 3, label: 'CETTE SEMAINE - NON CONFIRMÉ', color: 'yellow', priority: 'medium' }
+    }
+    if (event.status === EventStatus.CONFIRMED) {
+      return { level: 2, label: 'CETTE SEMAINE - CONFIRMÉ', color: 'blue', priority: 'low' }
+    }
+  }
+  
+  // Événements futurs (> 7 jours)
+  if (daysUntilEvent > 7) {
+    if (event.status === EventStatus.DRAFT) {
+      return { level: 2, label: 'FUTUR - BROUILLON', color: 'gray', priority: 'low' }
+    }
+    if (event.status === EventStatus.CONFIRMED) {
+      return { level: 1, label: 'FUTUR - CONFIRMÉ', color: 'green', priority: 'planning' }
+    }
+  }
+  
+// 🚨 SUPPRIMÉ : Ancienne fonction calculateUrgency
+// Maintenant on utilise SmartUrgencyCalculator.calculateUrgency()
+
+const Home: React.FC<HomeProps> = ({ navigate }) => {
+  const { state, actions } = useApp()
+  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null)
+  const [selectedEventForEdit, setSelectedEventForEdit] = useState<Event | null>(null)
+
+  // 🚨 NOUVELLE LOGIQUE : Événements urgents intelligents (max 5) - STABLE
+  const urgentEvents = useMemo(() => {
+    console.log('🔄 Recalcul urgentEvents intelligents')
+    return SmartUrgencyCalculator.getUrgentEvents(state.events, 5)
+  }, [state.events])
+
+  // Événements à facturer (terminés non facturés) - STABLE
+  const eventsToInvoice = useMemo(() => {
+    console.log('🔄 Recalcul eventsToInvoice')
+    return state.events
+      .filter(event => event.status === EventStatus.COMPLETED && !event.invoiced)
+      .sort((a, b) => new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime())
+  }, [state.events])
+
+  // Événements futurs (30 jours) - STABLE
+  const futureEvents = useMemo(() => {
+    console.log('🔄 Recalcul futureEvents')
+    const now = new Date()
+    const thirtyDaysFromNow = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000)
+    return state.events.filter(event => {
+      const eventDate = new Date(event.date)
+      return eventDate > now && eventDate <= thirtyDaysFromNow && event.status !== EventStatus.CANCELLED
+    })
+  }, [state.events])
+
+  // Handlers stables avec useCallback
+  const handleEventEdit = useCallback((updatedEvent: Event) => {
+    console.log('🔍 HOME - Début de sauvegarde:', {
+      eventId: updatedEvent.id,
+      title: updatedEvent.title
+    })
+    
+    if (updatedEvent.id) {
+      console.log('📤 HOME - Appel actions.updateEvent avec:', updatedEvent.id)
+      actions.updateEvent(updatedEvent.id, updatedEvent)
+      console.log('✅ HOME - actions.updateEvent appelé')
+    } else {
+      console.error('❌ HOME - Pas d\'ID sur l\'événement:', updatedEvent)
+    }
+    
+    setSelectedEventForEdit(null)
+    console.log('🔍 HOME - Événement sauvegardé, modal fermé')
+  }, [actions])
+
+  const handleCreateEvent = useCallback(() => {
+    navigate?.('events', { action: 'create' })
+  }, [navigate])
+
+  const handleEventSelect = useCallback((event: Event) => {
+    setSelectedEvent(event)
+  }, [])
+
+  const handleEventEditSelect = useCallback((event: Event) => {
+    setSelectedEventForEdit(event)
+  }, [])
+
+  const handleCloseModal = useCallback(() => {
+    setSelectedEvent(null)
+  }, [])
+
+  const handleCloseEditModal = useCallback(() => {
+    setSelectedEventForEdit(null)
+  }, [])
+
+  const handleSwitchToEdit = useCallback(() => {
+    setSelectedEventForEdit(selectedEvent)
+    setSelectedEvent(null)
+  }, [selectedEvent])
+
+  // Animation variants
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        duration: 0.3,
+        staggerChildren: 0.1
+      }
+    }
+  }
+
+  const sectionVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: { duration: 0.4 }
+    }
+  }
+
+  console.log('🏠 HOME RENDER - events:', state.events.length, 'urgent:', urgentEvents.length)
+
+  return (
+    <motion.div
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+      className="space-y-8 max-w-7xl mx-auto"
+    >
+      {/* Header simple */}
+      <motion.section variants={sectionVariants} className="space-y-6">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+              🌸 Dashboard Mathilde Fleurs
+            </h1>
+            <p className="text-gray-600 dark:text-gray-400 mt-1">
+              Gestion intelligente de vos événements par priorité
+            </p>
+          </div>
+          <div className="mt-4 lg:mt-0">
+            <button 
+              className="bg-green-500 hover:bg-green-600 text-white font-medium py-2 px-4 rounded-lg flex items-center space-x-2 transition-colors"
+              onClick={handleCreateEvent}
+            >
+              <Plus className="w-4 h-4" />
+              <span>Créer un nouvel événement</span>
+            </button>
+          </div>
+        </div>
+      </motion.section>
+
+      {/* NIVEAU 1 - URGENCE OPÉRATIONNELLE (40%) */}
+      <motion.section variants={sectionVariants}>
+        <UrgentEventsSection 
+          urgentEvents={urgentEvents}
+          onEventSelect={handleEventSelect}
+          onEventEdit={handleEventEditSelect}
+          navigate={navigate}
+        />
+      </motion.section>
+
+      {/* NIVEAU 2 - CASH FLOW (25%) */}
+      <motion.section 
+        variants={sectionVariants}
+        transition={{ delay: 0.2 }}
+      >
+        <InvoicingSection 
+          eventsToInvoice={eventsToInvoice}
+          navigate={navigate}
+        />
+      </motion.section>
+
+      {/* NIVEAU 3 - PLANIFICATION STRATÉGIQUE (30%) */}
+      <motion.section 
+        variants={sectionVariants}
+        transition={{ delay: 0.4 }}
+      >
+        <StrategicPlanningSection 
+          futureEvents={futureEvents}
+          navigate={navigate}
+        />
+      </motion.section>
+
+      {/* NIVEAU 4 - MÉTRIQUES BUSINESS (5%) */}
+      <motion.section 
+        variants={sectionVariants}
+        transition={{ delay: 0.6 }}
+      >
+        <BusinessMetricsSection 
+          events={state.events}
+          clients={state.clients}
+          futureEvents={futureEvents}
+          eventsToInvoice={eventsToInvoice}
+        />
+      </motion.section>
+
+      {/* Modal de lecture seule - Clic sur événement */}
+      <EventReadOnlyModal
+        event={selectedEvent}
+        client={selectedEvent ? state.clients.find(c => c.id === selectedEvent.clientId) : undefined}
+        isOpen={!!selectedEvent}
+        onClose={handleCloseModal}
+        onEdit={handleSwitchToEdit}
+      />
+
+      {/* Modal d'édition complexe - Clic sur "Modifier" */}
+      <EventModal
+        event={selectedEventForEdit}
+        client={selectedEventForEdit ? state.clients.find(c => c.id === selectedEventForEdit.clientId) : undefined}
+        isOpen={!!selectedEventForEdit}
+        onClose={handleCloseEditModal}
+        onEdit={handleEventEdit}
+      />
+    </motion.div>
+  )
+}
+
+export default Home

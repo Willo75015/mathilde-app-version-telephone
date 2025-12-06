@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Nettoyage Service Worker</title>
+</head>
+<body>
+    <h1>🧹 Nettoyage Service Worker Mathilde Fleurs</h1>
+    <div id="status">En cours...</div>
+    
+    <script>
+        async function cleanServiceWorker() {
+            const statusDiv = document.getElementById('status');
+            
+            try {
+                // Désinstaller tous les Service Workers
+                const registrations = await navigator.serviceWorker.getRegistrations();
+                
+                if (registrations.length === 0) {
+                    statusDiv.innerHTML = '✅ Aucun Service Worker à désinstaller';
+                    return;
+                }
+                
+                for (let registration of registrations) {
+                    await registration.unregister();
+                    console.log('🗑️ Service Worker désinstallé:', registration.scope);
+                }
+                
+                // Vider le cache
+                const cacheNames = await caches.keys();
+                for (let cacheName of cacheNames) {
+                    await caches.delete(cacheName);
+                    console.log('🗑️ Cache supprimé:', cacheName);
+                }
+                
+                statusDiv.innerHTML = `
+                    <h2>✅ NETTOYAGE TERMINÉ !</h2>
+                    <p>📝 ${registrations.length} Service Worker(s) désinstallé(s)</p>
+                    <p>📝 ${cacheNames.length} Cache(s) supprimé(s)</p>
+                    <p>🔄 <strong>Maintenant retournez sur localhost:3000 et rechargez !</strong></p>
+                `;
+                
+            } catch (error) {
+                statusDiv.innerHTML = `❌ Erreur: ${error.message}`;
+                console.error('Erreur nettoyage:', error);
+            }
+        }
+        
+        // Lancer automatiquement
+        cleanServiceWorker();
+    </script>
+</body>
+</html>

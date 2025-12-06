@@ -1,0 +1,463 @@
+name: 🔒 Security Scan - Mathilde Fleurs
+
+on:
+  schedule:
+    # Scan quotidien à 2h du matin UTC
+    - cron: '0 2 * * *'
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'package.json'
+      - 'package-lock.json'
+      - 'src/**'
+      - '.github/workflows/security-scan.yml'
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+# Permissions minimales
+permissions:
+  contents: read
+  security-events: write
+  actions: read
+
+env:
+  NODE_VERSION: '18'
+
+jobs:
+  # 🔍 Audit des dépendances
+  dependency-audit:
+    name: 🔍 Audit Dépendances
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 📥 Install dependencies
+        run: npm ci --audit
+
+      - name: 🔒 NPM Audit
+        run: |
+          echo "🔍 Audit NPM des vulnérabilités..."
+          npm audit --audit-level moderate
+          
+          # Générer un rapport détaillé
+          npm audit --json > npm-audit-report.json
+          
+          # Vérifier les vulnérabilités critiques et hautes
+          CRITICAL=$(npm audit --json | jq '.metadata.vulnerabilities.critical // 0')
+          HIGH=$(npm audit --json | jq '.metadata.vulnerabilities.high // 0')
+          
+          echo "Vulnérabilités critiques: $CRITICAL"
+          echo "Vulnérabilités hautes: $HIGH"
+          
+          if [ "$CRITICAL" -gt 0 ] || [ "$HIGH" -gt 0 ]; then
+            echo "❌ Vulnérabilités critiques ou hautes détectées"
+            echo "📊 Détails dans npm-audit-report.json"
+            exit 1
+          fi
+          
+          echo "✅ Aucune vulnérabilité critique ou haute"
+
+      - name: 📤 Upload Audit Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: npm-audit-report
+          path: npm-audit-report.json
+          retention-days: 30
+
+  # 🔒 Scan des secrets
+  secret-scan:
+    name: 🔒 Scan Secrets
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 🔍 GitLeaks Secret Scan
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
+
+      - name: 🔍 TruffleHog Scan
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: main
+          head: HEAD
+          extra_args: --debug --only-verified
+
+  # 🛡️ Analyse statique du code
+  static-analysis:
+    name: 🛡️ Analyse Statique
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 📥 Install dependencies
+        run: npm ci
+
+      - name: 🔍 ESLint Security Rules
+        run: |
+          echo "🔍 Vérification des règles de sécurité ESLint..."
+          
+          # Créer une config ESLint pour la sécurité
+          cat > .eslintrc.security.json << EOF
+          {
+            "extends": [".eslintrc.json"],
+            "plugins": ["security"],
+            "rules": {
+              "security/detect-object-injection": "error",
+              "security/detect-non-literal-regexp": "error",
+              "security/detect-non-literal-fs-filename": "error",
+              "security/detect-eval-with-expression": "error",
+              "security/detect-pseudoRandomBytes": "error",
+              "security/detect-possible-timing-attacks": "error"
+            }
+          }
+          EOF
+          
+          npx eslint . --ext .js,.jsx,.ts,.tsx \
+            --config .eslintrc.security.json \
+            --format json \
+            --output-file eslint-security-report.json || true
+          
+          # Analyser les résultats
+          if [ -f eslint-security-report.json ]; then
+            SECURITY_ERRORS=$(cat eslint-security-report.json | jq '[.[] | .messages[] | select(.ruleId | contains("security/"))] | length')
+            
+            if [ "$SECURITY_ERRORS" -gt 0 ]; then
+              echo "⚠️ $SECURITY_ERRORS erreurs de sécurité détectées"
+              cat eslint-security-report.json | jq '.[] | .messages[] | select(.ruleId | contains("security/"))'
+            else
+              echo "✅ Aucune erreur de sécurité ESLint"
+            fi
+          fi
+
+      - name: 🔍 Semgrep SAST
+        uses: semgrep/semgrep-action@v1
+        with:
+          config: >-
+            p/security-audit
+            p/secrets
+            p/owasp-top-ten
+            p/react
+            p/typescript
+        env:
+          SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
+
+      - name: 📤 Upload Security Reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-analysis-reports
+          path: |
+            eslint-security-report.json
+          retention-days: 30
+
+  # 🔒 Scan Trivy
+  trivy-scan:
+    name: 🔒 Scan Trivy
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🔍 Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+
+      - name: 📤 Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+      - name: 📤 Upload Trivy Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-report
+          path: trivy-results.sarif
+          retention-days: 30
+
+  # 🕷️ OWASP ZAP Scan
+  zap-scan:
+    name: 🕷️ OWASP ZAP Scan
+    runs-on: ubuntu-latest
+    if: github.event_name != 'schedule'
+    
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 📥 Install and Build
+        run: |
+          npm ci
+          npm run build
+
+      - name: 🚀 Start Application
+        run: |
+          npm run preview &
+          sleep 30
+        env:
+          CI: true
+
+      - name: 🕷️ ZAP Baseline Scan
+        uses: zaproxy/action-baseline@v0.7.0
+        with:
+          target: 'http://localhost:4173'
+          rules_file_name: '.zap/rules.tsv'
+          cmd_options: '-a'
+          allow_issue_writing: false
+
+      - name: 🕷️ ZAP Full Scan
+        if: github.event_name == 'workflow_dispatch'
+        uses: zaproxy/action-full-scan@v0.4.0
+        with:
+          target: 'http://localhost:4173'
+          rules_file_name: '.zap/rules.tsv'
+          cmd_options: '-a'
+          allow_issue_writing: false
+
+      - name: 📤 Upload ZAP Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: zap-report
+          path: report_html.html
+          retention-days: 30
+
+  # 🔐 Configuration de sécurité
+  security-config-check:
+    name: 🔐 Vérif Config Sécurité
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🔐 Security Headers Check
+        run: |
+          echo "🔐 Vérification des headers de sécurité..."
+          
+          # Vérifier la présence des headers de sécurité dans index.html
+          SECURITY_HEADERS=(
+            "Content-Security-Policy"
+            "X-Frame-Options"
+            "X-Content-Type-Options"
+            "X-XSS-Protection"
+            "Referrer-Policy"
+          )
+          
+          MISSING_HEADERS=()
+          
+          for header in "${SECURITY_HEADERS[@]}"; do
+            if ! grep -q "$header" index.html; then
+              MISSING_HEADERS+=("$header")
+            fi
+          done
+          
+          if [ ${#MISSING_HEADERS[@]} -eq 0 ]; then
+            echo "✅ Tous les headers de sécurité sont présents"
+          else
+            echo "⚠️ Headers manquants:"
+            printf '%s\n' "${MISSING_HEADERS[@]}"
+          fi
+
+      - name: 🔐 Environment Variables Check
+        run: |
+          echo "🔐 Vérification des variables d'environnement..."
+          
+          # Vérifier qu'il n'y a pas de secrets hardcodés
+          if find src -name "*.ts" -o -name "*.tsx" -o -name "*.js" -o -name "*.jsx" | xargs grep -E "(password|secret|key|token)\s*=\s*['\"][^'\"]+['\"]" --color=never; then
+            echo "❌ Secrets potentiels détectés dans le code"
+            exit 1
+          else
+            echo "✅ Aucun secret hardcodé détecté"
+          fi
+
+      - name: 🔐 HTTPS Configuration Check
+        run: |
+          echo "🔐 Vérification de la configuration HTTPS..."
+          
+          # Vérifier la configuration PWA pour HTTPS
+          if grep -q '"start_url": "https://' public/manifest.json; then
+            echo "✅ HTTPS configuré dans le manifest"
+          else
+            echo "⚠️ HTTPS non configuré dans le manifest"
+          fi
+
+  # 📊 Rapport de sécurité consolidé
+  security-summary:
+    name: 📊 Résumé Sécurité
+    runs-on: ubuntu-latest
+    needs: [dependency-audit, secret-scan, static-analysis, trivy-scan, security-config-check]
+    if: always()
+    
+    steps:
+      - name: 📊 Generate Security Summary
+        run: |
+          echo "## 🔒 Résumé de Sécurité - Mathilde Fleurs" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Scan | Status | Détails |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|--------|---------|" >> $GITHUB_STEP_SUMMARY
+          echo "| 🔍 Audit Dépendances | ${{ needs.dependency-audit.result == 'success' && '✅ Réussi' || '❌ Échoué' }} | Vulnérabilités NPM |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🔒 Scan Secrets | ${{ needs.secret-scan.result == 'success' && '✅ Réussi' || '❌ Échoué' }} | GitLeaks + TruffleHog |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🛡️ Analyse Statique | ${{ needs.static-analysis.result == 'success' && '✅ Réussi' || '❌ Échoué' }} | ESLint + Semgrep |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🔒 Scan Trivy | ${{ needs.trivy-scan.result == 'success' && '✅ Réussi' || '❌ Échoué' }} | Vulnérabilités OS/libs |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🔐 Config Sécurité | ${{ needs.security-config-check.result == 'success' && '✅ Réussi' || '❌ Échoué' }} | Headers & Config |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Compter les succès
+          SUCCESSFUL_SCANS=0
+          TOTAL_SCANS=5
+          
+          [[ "${{ needs.dependency-audit.result }}" == "success" ]] && ((SUCCESSFUL_SCANS++))
+          [[ "${{ needs.secret-scan.result }}" == "success" ]] && ((SUCCESSFUL_SCANS++))
+          [[ "${{ needs.static-analysis.result }}" == "success" ]] && ((SUCCESSFUL_SCANS++))
+          [[ "${{ needs.trivy-scan.result }}" == "success" ]] && ((SUCCESSFUL_SCANS++))
+          [[ "${{ needs.security-config-check.result }}" == "success" ]] && ((SUCCESSFUL_SCANS++))
+          
+          echo "**Score de sécurité: $SUCCESSFUL_SCANS/$TOTAL_SCANS**" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ $SUCCESSFUL_SCANS -eq $TOTAL_SCANS ]; then
+            echo "🎉 **Tous les contrôles de sécurité sont passés !**" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ **Certains contrôles de sécurité ont échoué. Action requise.**" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          # Recommandations
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 💡 Recommandations:" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [[ "${{ needs.dependency-audit.result }}" != "success" ]]; then
+            echo "- 🔍 **Dépendances**: Mettre à jour les packages vulnérables avec \`npm audit fix\`" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [[ "${{ needs.secret-scan.result }}" != "success" ]]; then
+            echo "- 🔒 **Secrets**: Supprimer les secrets du code et utiliser des variables d'environnement" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [[ "${{ needs.static-analysis.result }}" != "success" ]]; then
+            echo "- 🛡️ **Code**: Corriger les problèmes de sécurité identifiés par l'analyse statique" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [[ "${{ needs.trivy-scan.result }}" != "success" ]]; then
+            echo "- 🔒 **Vulnérabilités**: Examiner et corriger les vulnérabilités détectées par Trivy" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [[ "${{ needs.security-config-check.result }}" != "success" ]]; then
+            echo "- 🔐 **Configuration**: Améliorer la configuration de sécurité (headers, HTTPS)" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: 📧 Security Alert
+        if: >
+          needs.dependency-audit.result == 'failure' ||
+          needs.secret-scan.result == 'failure' ||
+          needs.static-analysis.result == 'failure' ||
+          needs.trivy-scan.result == 'failure'
+        run: |
+          echo "🚨 ALERTE SÉCURITÉ 🚨"
+          echo "Des problèmes de sécurité critiques ont été détectés."
+          echo "Action immédiate requise avant le déploiement."
+          
+          # Ici vous pourriez envoyer des notifications d'urgence
+          
+          exit 1
+
+  # 🔒 Recommandations de sécurité
+  security-recommendations:
+    name: 🔒 Recommandations
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule'
+    
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🔒 Generate Security Recommendations
+        run: |
+          echo "🔒 Génération des recommandations de sécurité..."
+          
+          # Analyser les dépendances obsolètes
+          npx npm-check-updates --format json > ncu-report.json || true
+          
+          # Générer un rapport de recommandations
+          cat > security-recommendations.md << EOF
+          # 🔒 Recommandations de Sécurité - Mathilde Fleurs
+          
+          ## 📊 Statut Actuel
+          - Date d'analyse: $(date)
+          - Branch: ${{ github.ref_name }}
+          - Commit: ${{ github.sha }}
+          
+          ## 🔄 Mises à Jour Recommandées
+          \`\`\`bash
+          # Mettre à jour les dépendances
+          npm update
+          
+          # Vérifier les vulnérabilités
+          npm audit
+          
+          # Corriger automatiquement
+          npm audit fix
+          \`\`\`
+          
+          ## 🛡️ Bonnes Pratiques
+          - [ ] Mettre à jour régulièrement les dépendances
+          - [ ] Utiliser des variables d'environnement pour les secrets
+          - [ ] Implémenter une CSP stricte
+          - [ ] Activer HTTPS en production
+          - [ ] Surveiller les vulnérabilités en continu
+          
+          ## 🔍 Prochaines Actions
+          1. Examiner les vulnérabilités détectées
+          2. Planifier les mises à jour de sécurité
+          3. Tester les correctifs en staging
+          4. Déployer les correctifs en production
+          EOF
+          
+          echo "✅ Recommandations générées"
+
+      - name: 📤 Upload Recommendations
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-recommendations
+          path: security-recommendations.md
+          retention-days: 90

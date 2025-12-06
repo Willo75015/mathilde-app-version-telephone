@@ -1,0 +1,30 @@
+<svg width="300" height="200" viewBox="0 0 300 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="300" height="200" fill="#f8fafc"/>
+  
+  <!-- Tulipe stylisée -->
+  <defs>
+    <linearGradient id="tulipGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#fef3c7;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#fbbf24;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#d97706;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Tige -->
+  <rect x="147" y="100" width="6" height="80" fill="#22c55e" rx="3"/>
+  
+  <!-- Feuilles allongées -->
+  <ellipse cx="125" cy="130" rx="8" ry="25" fill="#16a34a" transform="rotate(-15 125 130)"/>
+  <ellipse cx="175" cy="135" rx="6" ry="20" fill="#16a34a" transform="rotate(15 175 135)"/>
+  
+  <!-- Tulipe (forme caractéristique) -->
+  <path d="M130 90 Q130 50 150 45 Q170 50 170 90 Q165 100 150 105 Q135 100 130 90" fill="url(#tulipGradient)"/>
+  
+  <!-- Détails pétales -->
+  <path d="M135 70 Q150 55 165 70 Q150 85 135 70" fill="#f59e0b" opacity="0.6"/>
+  <line x1="150" y1="50" x2="150" y2="95" stroke="#d97706" stroke-width="1" opacity="0.7"/>
+  
+  <!-- Texte -->
+  <text x="150" y="190" font-family="Arial, sans-serif" font-size="14" text-anchor="middle" fill="#6b7280">Tulipe</text>
+</svg>

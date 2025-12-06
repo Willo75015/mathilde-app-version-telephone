@@ -1,0 +1,467 @@
+import React, { useState } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { 
+  AlertCircle, CheckCircle, Plus, MessageSquare, XCircle, Trash2
+} from 'lucide-react'
+import Button from '@/components/ui/Button'
+import { Event } from '@/types'
+
+// 🆕 Fonction pour détecter les conflits de fleuristes
+export const checkFloristConflicts = (
+  floristId: string, 
+  currentEventId: string, 
+  eventDate: Date, 
+  allEvents: Event[]
+): { hasConflict: boolean; conflictingEvents: Event[] } => {
+  // Convertir la date en string pour comparaison
+  const targetDate = eventDate.toDateString()
+  
+  const conflictingEvents = allEvents.filter(event => {
+    // Ignorer l'événement actuel
+    if (event.id === currentEventId) return false
+    
+    // Vérifier si c'est le même jour
+    const eventDateStr = (event.date instanceof Date ? event.date : new Date(event.date)).toDateString()
+    if (eventDateStr !== targetDate) return false
+    
+    // Vérifier si le fleuriste est assigné et confirmé
+    const hasFlorist = event.assignedFlorists?.some(af => 
+      af.floristId === floristId && (af.isConfirmed || af.status === 'confirmed')
+    )
+    
+    return hasFlorist
+  })
+  
+  return {
+    hasConflict: conflictingEvents.length > 0,
+    conflictingEvents
+  }
+}
+
+export const getFloristStatus = (
+  florist: { id: string; name: string; status?: string }, 
+  allEvents: Event[]
+): {
+  status: 'available' | 'on_mission' | 'unavailable'
+  currentMissions: Event[]
+  totalMissions: number
+} => {
+  const today = new Date().toDateString()
+  
+  // Trouver toutes les missions en cours (aujourd'hui)
+  const currentMissions = allEvents.filter(event => {
+    const eventDateStr = (event.date instanceof Date ? event.date : new Date(event.date)).toDateString()
+    if (eventDateStr !== today) return false
+    
+    return event.assignedFlorists?.some(af => 
+      af.floristId === florist.id && (af.isConfirmed || af.status === 'confirmed')
+    )
+  })
+  
+  // Compter le total des missions (toutes dates confondues)
+  const totalMissions = allEvents.filter(event => {
+    return event.assignedFlorists?.some(af => 
+      af.floristId === florist.id && (af.isConfirmed || af.status === 'confirmed')
+    )
+  }).length
+  
+  let status: 'available' | 'on_mission' | 'unavailable' = 'available'
+  
+  if (florist.status === 'unavailable') {
+    status = 'unavailable'
+  } else if (currentMissions.length > 0) {
+    status = 'on_mission'
+  }
+  
+  return {
+    status,
+    currentMissions,
+    totalMissions
+  }
+}
+
+// Interface pour les fleuristes
+interface Florist {
+  id: string
+  name: string
+  role?: string
+  status?: 'available' | 'unavailable' | 'busy'
+  avatar?: string
+}
+
+interface FloristWithConflictWarningProps {
+  florist: Florist
+  allEvents: Event[]
+  currentEventId: string
+  currentEventDate: Date
+  onAssign: (florist: Florist) => void
+  showAddButton?: boolean
+  compact?: boolean
+  assignmentStatus?: 'confirmed' | 'pending' | 'refused' | null
+  onStatusChange?: (newStatus: 'confirmed' | 'pending' | 'refused') => void
+  onRemove?: () => void
+}
+
+export const FloristWithConflictWarning: React.FC<FloristWithConflictWarningProps> = ({
+  florist,
+  allEvents,
+  currentEventId,
+  currentEventDate,
+  onAssign,
+  showAddButton = true,
+  compact = false,
+  assignmentStatus = null,
+  onStatusChange,
+  onRemove
+}) => {
+  const [showConflictWarning, setShowConflictWarning] = useState(false)
+  
+  const floristStatus = getFloristStatus(florist, allEvents)
+  const conflicts = checkFloristConflicts(florist.id, currentEventId, currentEventDate, allEvents)
+  
+  // Couleur de la carte selon le statut
+  const getCardStyle = () => {
+    if (floristStatus.status === 'on_mission') {
+      return 'border-l-4 border-orange-400 bg-orange-50 dark:bg-orange-900/20'
+    }
+    if (floristStatus.status === 'unavailable') {
+      return 'border-l-4 border-red-400 bg-red-50 dark:bg-red-900/20'
+    }
+    return 'border-l-4 border-green-400 bg-white dark:bg-gray-700'
+  }
+  
+  // Icône de statut
+  const getStatusIcon = () => {
+    if (floristStatus.status === 'on_mission') return '⚠️'
+    if (floristStatus.status === 'unavailable') return '❌'
+    return '✅'
+  }
+  
+  const handleAssignWithCheck = () => {
+    if (conflicts.hasConflict) {
+      setShowConflictWarning(true)
+    } else {
+      onAssign(florist)
+    }
+  }
+  
+  const handleForceAssign = () => {
+    setShowConflictWarning(false)
+    onAssign(florist)
+  }
+  
+  const handleConfirmWithCheck = () => {
+    if (conflicts.hasConflict) {
+      setShowConflictWarning(true)
+    } else if (onStatusChange) {
+      onStatusChange('confirmed')
+    }
+  }
+  
+  const handleForceConfirm = () => {
+    setShowConflictWarning(false)
+    if (onStatusChange) {
+      onStatusChange('confirmed')
+    }
+  }
+  
+  // Modal d'Alerte de Conflit réutilisable
+  const ConflictWarningModal = () => (
+    <AnimatePresence>
+      {showConflictWarning && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-[70]"
+          onClick={() => setShowConflictWarning(false)}
+        >
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.8, opacity: 0 }}
+            className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-md w-full p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="text-center">
+              <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <AlertCircle className="w-8 h-8 text-orange-600" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+                ⚠️ Conflit détecté
+              </h3>
+              <p className="text-gray-600 dark:text-gray-400 mb-4">
+                <span className="font-bold text-orange-600">{florist.name}</span> est déjà assigné(e) 
+                à {conflicts.conflictingEvents.length} autre{conflicts.conflictingEvents.length > 1 ? 's' : ''} événement{conflicts.conflictingEvents.length > 1 ? 's' : ''} 
+                le même jour.
+              </p>
+              
+              <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 mb-6 text-left">
+                <h4 className="font-semibold text-gray-900 dark:text-white mb-2">
+                  Mission{conflicts.conflictingEvents.length > 1 ? 's' : ''} en conflit :
+                </h4>
+                {conflicts.conflictingEvents.map(event => (
+                  <div key={event.id} className="mb-2 p-2 bg-white dark:bg-gray-600 rounded border-l-2 border-orange-400">
+                    <div className="font-medium text-gray-900 dark:text-white">{event.title}</div>
+                    <div className="text-sm text-gray-600 dark:text-gray-400">
+                      {event.time} - {event.location}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              
+              <div className="flex space-x-3">
+                <Button
+                  variant="secondary"
+                  onClick={() => setShowConflictWarning(false)}
+                  className="flex-1"
+                >
+                  Annuler
+                </Button>
+                <Button
+                  variant="primary"
+                  onClick={assignmentStatus ? handleForceConfirm : handleForceAssign}
+                  className="flex-1 bg-orange-500 hover:bg-orange-600"
+                  leftIcon={<CheckCircle className="w-4 h-4" />}
+                >
+                  {assignmentStatus ? 'Confirmer quand même' : 'Assigner quand même'}
+                </Button>
+              </div>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  )
+  
+  if (compact) {
+    // Version compacte pour les listes
+    return (
+      <>
+        <div className={`flex items-center justify-between p-2 rounded-lg border border-gray-200 dark:border-gray-600 ${getCardStyle()}`}>
+          <div className="flex items-center space-x-2">
+            <div className="w-8 h-8 bg-gradient-to-r from-purple-400 to-pink-500 rounded-full flex items-center justify-center text-white font-medium text-xs">
+              {florist.name.split(' ').map(n => n[0]).join('')}
+            </div>
+            <div className="flex-1">
+              <div className="font-medium text-gray-900 dark:text-white text-sm flex items-center space-x-1">
+                <span>{florist.name}</span>
+                {floristStatus.status === 'on_mission' && (
+                  <span className="text-xs bg-orange-100 text-orange-800 px-1.5 py-0.5 rounded-full font-medium">
+                    {getStatusIcon()} Mission
+                  </span>
+                )}
+              </div>
+              {florist.role && (
+                <div className="text-xs text-gray-500 dark:text-gray-400">
+                  {florist.role}
+                </div>
+              )}
+              {floristStatus.status === 'on_mission' && floristStatus.currentMissions.length > 0 && (
+                <div className="text-xs text-orange-600 dark:text-orange-400 font-medium">
+                  📍 Mission: {floristStatus.currentMissions[0].title}
+                  {floristStatus.currentMissions.length > 1 && ` (+${floristStatus.currentMissions.length - 1} autre${floristStatus.currentMissions.length > 2 ? 's' : ''})`}
+                </div>
+              )}
+              {floristStatus.status === 'on_mission' && (
+                <button
+                  className="text-xs text-blue-600 hover:text-blue-800 underline"
+                  onClick={() => setShowConflictWarning(true)}
+                  title="Voir les missions en conflit"
+                >
+                  Voir mission{floristStatus.currentMissions.length > 1 ? 's' : ''}
+                </button>
+              )}
+            </div>
+          </div>
+          
+          {showAddButton && assignmentStatus === null && (
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={handleAssignWithCheck}
+              leftIcon={<Plus className="w-3 h-3" />}
+              className={conflicts.hasConflict ? 'bg-orange-500 hover:bg-orange-600' : ''}
+              title={conflicts.hasConflict ? "Assigner malgré le conflit" : "Assigner le fleuriste"}
+            >
+              Ajouter
+            </Button>
+          )}
+          
+          {assignmentStatus && onStatusChange && (
+            <div className="flex items-center space-x-1">
+              <motion.button
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                onClick={handleConfirmWithCheck}
+                className={`p-1.5 rounded-full transition-colors ${
+                  conflicts.hasConflict 
+                    ? 'bg-orange-100 hover:bg-orange-200 text-orange-600' 
+                    : 'bg-green-100 hover:bg-green-200 text-green-600'
+                }`}
+                title={conflicts.hasConflict ? "Confirmer malgré le conflit" : "Confirmer le fleuriste"}
+              >
+                <CheckCircle className="w-3 h-3" />
+              </motion.button>
+              
+              <motion.button
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                onClick={() => onStatusChange('refused')}
+                className="p-1.5 rounded-full bg-red-100 hover:bg-red-200 text-red-600 transition-colors"
+                title="Refuser le fleuriste"
+              >
+                <XCircle className="w-3 h-3" />
+              </motion.button>
+              
+              {onRemove && (
+                <motion.button
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  onClick={onRemove}
+                  className="p-1.5 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600 transition-colors"
+                  title="Retirer de l'assignation"
+                >
+                  <Trash2 className="w-3 h-3" />
+                </motion.button>
+              )}
+            </div>
+          )}
+        </div>
+        
+        <ConflictWarningModal />
+      </>
+    )
+  }
+  
+  // Version complète
+  return (
+    <>
+      <div className={`flex items-center justify-between p-3 rounded-lg border border-gray-200 dark:border-gray-600 ${getCardStyle()}`}>
+        <div className="flex items-center space-x-3">
+          <div className="w-10 h-10 bg-gradient-to-r from-pink-400 to-purple-500 rounded-full flex items-center justify-center text-white font-medium text-sm">
+            {florist.name.split(' ').map(n => n[0]).join('')}
+          </div>
+          <div className="flex-1">
+            <div className="font-medium text-gray-900 dark:text-white flex items-center space-x-2">
+              <span>{florist.name}</span>
+              {floristStatus.status === 'on_mission' && (
+                <span className="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded-full font-medium">
+                  {getStatusIcon()} Sur mission
+                </span>
+              )}
+            </div>
+            <div className="text-sm text-gray-500 dark:text-gray-400 flex items-center space-x-2">
+              <span>{florist.role || 'Fleuriste'}</span>
+              {floristStatus.status === 'on_mission' && floristStatus.currentMissions.length > 0 && (
+                <>
+                  <span>•</span>
+                  <span className="text-orange-600 dark:text-orange-400 font-medium">
+                    📍 {floristStatus.currentMissions[0].title}
+                    {floristStatus.currentMissions.length > 1 && ` (+${floristStatus.currentMissions.length - 1})`}
+                  </span>
+                </>
+              )}
+              {floristStatus.status === 'on_mission' && (
+                <div className="flex items-center space-x-1">
+                  <span>•</span>
+                  <button
+                    className="text-blue-600 hover:text-blue-800 underline"
+                    onClick={() => setShowConflictWarning(true)}
+                    title="Voir les missions en conflit"
+                  >
+                    Voir mission{floristStatus.currentMissions.length > 1 ? 's' : ''}
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+          {assignmentStatus && (
+            <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+              assignmentStatus === 'confirmed' ? 'bg-green-100 text-green-800' : 
+              assignmentStatus === 'pending' ? 'bg-orange-100 text-orange-800' :
+              'bg-red-100 text-red-800'
+            }`}>
+              {assignmentStatus === 'confirmed' ? '✅ Confirmé' : 
+               assignmentStatus === 'pending' ? '⏳ En attente' :
+               '❌ Refusé'}
+            </span>
+          )}
+        </div>
+        
+        {/* ACTIONS */}
+        <div className="flex items-center space-x-2">
+          {showAddButton && assignmentStatus === null && (
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={handleAssignWithCheck}
+              leftIcon={<Plus className="w-4 h-4" />}
+              className={conflicts.hasConflict ? 'bg-orange-500 hover:bg-orange-600' : ''}
+              title={conflicts.hasConflict ? "Assigner malgré le conflit" : "Assigner le fleuriste"}
+            >
+              Ajouter
+            </Button>
+          )}
+          
+          {assignmentStatus && (
+            <>
+              <motion.button
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                className="p-2 rounded-full bg-blue-100 hover:bg-blue-200 text-blue-600 transition-colors"
+                title="Contacter le fleuriste"
+              >
+                <MessageSquare className="w-4 h-4" />
+              </motion.button>
+              
+              {onStatusChange && (
+                <motion.button
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  onClick={handleConfirmWithCheck}
+                  className={`p-2 rounded-full transition-colors ${
+                    conflicts.hasConflict 
+                      ? 'bg-orange-100 hover:bg-orange-200 text-orange-600' 
+                      : 'bg-green-100 hover:bg-green-200 text-green-600'
+                  }`}
+                  title={conflicts.hasConflict ? "Confirmer malgré le conflit" : "Confirmer le fleuriste"}
+                >
+                  <CheckCircle className="w-4 h-4" />
+                </motion.button>
+              )}
+              
+              {onStatusChange && (
+                <motion.button
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  onClick={() => onStatusChange('refused')}
+                  className="p-2 rounded-full bg-red-100 hover:bg-red-200 text-red-600 transition-colors"
+                  title="Refuser le fleuriste"
+                >
+                  <XCircle className="w-4 h-4" />
+                </motion.button>
+              )}
+              
+              {onRemove && (
+                <motion.button
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  onClick={onRemove}
+                  className="p-2 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600 transition-colors"
+                  title="Retirer de l'assignation"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </motion.button>
+              )}
+            </>
+          )}
+        </div>
+      </div>
+      
+      <ConflictWarningModal />
+    </>
+  )
+}
+
+export default FloristWithConflictWarning

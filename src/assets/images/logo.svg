@@ -1,0 +1,142 @@
+<svg width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Définitions des gradients et filtres -->
+  <defs>
+    <!-- Gradient principal pour les fleurs -->
+    <linearGradient id="flowerGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#10b981;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#059669;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#047857;stop-opacity:1" />
+    </linearGradient>
+    
+    <!-- Gradient secondaire pour les accents -->
+    <linearGradient id="accentGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ec4899;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#db2777;stop-opacity:1" />
+    </linearGradient>
+    
+    <!-- Gradient pour le texte -->
+    <linearGradient id="textGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#065f46;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#047857;stop-opacity:1" />
+    </linearGradient>
+    
+    <!-- Filtre d'ombre douce -->
+    <filter id="softShadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feDropShadow dx="2" dy="4" stdDeviation="3" flood-color="rgba(0,0,0,0.1)"/>
+    </filter>
+    
+    <!-- Filtre pour effet de brillance -->
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+      <feMerge> 
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <!-- Cercle de fond avec dégradé subtil -->
+  <circle cx="60" cy="60" r="58" fill="url(#flowerGradient)" opacity="0.05" stroke="url(#flowerGradient)" stroke-width="2" stroke-opacity="0.1"/>
+  
+  <!-- Fleur principale (centre) -->
+  <g transform="translate(60, 60)" filter="url(#softShadow)">
+    <!-- Pétales de la fleur principale -->
+    <g fill="url(#flowerGradient)">
+      <!-- Pétale top -->
+      <ellipse cx="0" cy="-12" rx="8" ry="15" transform="rotate(0)" opacity="0.9"/>
+      <!-- Pétale top-right -->
+      <ellipse cx="8.5" cy="-8.5" rx="8" ry="15" transform="rotate(45)" opacity="0.85"/>
+      <!-- Pétale right -->
+      <ellipse cx="12" cy="0" rx="8" ry="15" transform="rotate(90)" opacity="0.8"/>
+      <!-- Pétale bottom-right -->
+      <ellipse cx="8.5" cy="8.5" rx="8" ry="15" transform="rotate(135)" opacity="0.85"/>
+      <!-- Pétale bottom -->
+      <ellipse cx="0" cy="12" rx="8" ry="15" transform="rotate(180)" opacity="0.9"/>
+      <!-- Pétale bottom-left -->
+      <ellipse cx="-8.5" cy="8.5" rx="8" ry="15" transform="rotate(225)" opacity="0.85"/>
+      <!-- Pétale left -->
+      <ellipse cx="-12" cy="0" rx="8" ry="15" transform="rotate(270)" opacity="0.8"/>
+      <!-- Pétale top-left -->
+      <ellipse cx="-8.5" cy="-8.5" rx="8" ry="15" transform="rotate(315)" opacity="0.85"/>
+    </g>
+    
+    <!-- Centre de la fleur -->
+    <circle cx="0" cy="0" r="6" fill="url(#accentGradient)" filter="url(#glow)"/>
+    <circle cx="0" cy="0" r="3" fill="#fbbf24" opacity="0.8"/>
+  </g>
+  
+  <!-- Fleurs secondaires (plus petites) -->
+  <!-- Fleur top-left -->
+  <g transform="translate(25, 25)" opacity="0.7">
+    <g fill="url(#flowerGradient)">
+      <ellipse cx="0" cy="-6" rx="4" ry="8" transform="rotate(0)"/>
+      <ellipse cx="4.2" cy="-4.2" rx="4" ry="8" transform="rotate(45)"/>
+      <ellipse cx="6" cy="0" rx="4" ry="8" transform="rotate(90)"/>
+      <ellipse cx="4.2" cy="4.2" rx="4" ry="8" transform="rotate(135)"/>
+      <ellipse cx="0" cy="6" rx="4" ry="8" transform="rotate(180)"/>
+      <ellipse cx="-4.2" cy="4.2" rx="4" ry="8" transform="rotate(225)"/>
+      <ellipse cx="-6" cy="0" rx="4" ry="8" transform="rotate(270)"/>
+      <ellipse cx="-4.2" cy="-4.2" rx="4" ry="8" transform="rotate(315)"/>
+    </g>
+    <circle cx="0" cy="0" r="3" fill="url(#accentGradient)"/>
+  </g>
+  
+  <!-- Fleur top-right -->
+  <g transform="translate(95, 25)" opacity="0.6">
+    <g fill="url(#flowerGradient)">
+      <ellipse cx="0" cy="-5" rx="3" ry="6" transform="rotate(0)"/>
+      <ellipse cx="3.5" cy="-3.5" rx="3" ry="6" transform="rotate(45)"/>
+      <ellipse cx="5" cy="0" rx="3" ry="6" transform="rotate(90)"/>
+      <ellipse cx="3.5" cy="3.5" rx="3" ry="6" transform="rotate(135)"/>
+      <ellipse cx="0" cy="5" rx="3" ry="6" transform="rotate(180)"/>
+      <ellipse cx="-3.5" cy="3.5" rx="3" ry="6" transform="rotate(225)"/>
+      <ellipse cx="-5" cy="0" rx="3" ry="6" transform="rotate(270)"/>
+      <ellipse cx="-3.5" cy="-3.5" rx="3" ry="6" transform="rotate(315)"/>
+    </g>
+    <circle cx="0" cy="0" r="2" fill="url(#accentGradient)"/>
+  </g>
+  
+  <!-- Fleur bottom-left -->
+  <g transform="translate(25, 95)" opacity="0.6">
+    <g fill="url(#flowerGradient)">
+      <ellipse cx="0" cy="-5" rx="3" ry="6" transform="rotate(0)"/>
+      <ellipse cx="3.5" cy="-3.5" rx="3" ry="6" transform="rotate(45)"/>
+      <ellipse cx="5" cy="0" rx="3" ry="6" transform="rotate(90)"/>
+      <ellipse cx="3.5" cy="3.5" rx="3" ry="6" transform="rotate(135)"/>
+      <ellipse cx="0" cy="5" rx="3" ry="6" transform="rotate(180)"/>
+      <ellipse cx="-3.5" cy="3.5" rx="3" ry="6" transform="rotate(225)"/>
+      <ellipse cx="-5" cy="0" rx="3" ry="6" transform="rotate(270)"/>
+      <ellipse cx="-3.5" cy="-3.5" rx="3" ry="6" transform="rotate(315)"/>
+    </g>
+    <circle cx="0" cy="0" r="2" fill="url(#accentGradient)"/>
+  </g>
+  
+  <!-- Feuilles décoratives -->
+  <!-- Feuille gauche -->
+  <path d="M15 60 Q10 50, 20 45 Q25 50, 20 60 Q25 70, 20 75 Q10 70, 15 60Z" 
+        fill="url(#flowerGradient)" opacity="0.4"/>
+  
+  <!-- Feuille droite -->
+  <path d="M105 60 Q110 50, 100 45 Q95 50, 100 60 Q95 70, 100 75 Q110 70, 105 60Z" 
+        fill="url(#flowerGradient)" opacity="0.4"/>
+  
+  <!-- Tiges subtiles -->
+  <line x1="25" y1="40" x2="35" y2="50" stroke="url(#flowerGradient)" stroke-width="2" opacity="0.3"/>
+  <line x1="95" y1="40" x2="85" y2="50" stroke="url(#flowerGradient)" stroke-width="2" opacity="0.3"/>
+  <line x1="25" y1="80" x2="35" y2="70" stroke="url(#flowerGradient)" stroke-width="2" opacity="0.3"/>
+  
+  <!-- Points décoratifs pour dynamisme -->
+  <circle cx="40" cy="30" r="1.5" fill="url(#accentGradient)" opacity="0.6">
+    <animate attributeName="opacity" values="0.6;1;0.6" dur="3s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="80" cy="35" r="1" fill="url(#accentGradient)" opacity="0.5">
+    <animate attributeName="opacity" values="0.5;0.8;0.5" dur="4s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="30" cy="85" r="1" fill="url(#accentGradient)" opacity="0.5">
+    <animate attributeName="opacity" values="0.5;0.8;0.5" dur="5s" repeatCount="indefinite"/>
+  </circle>
+  
+  <!-- Texte "M" stylisé au centre (optionnel - peut être retiré pour version icon-only) -->
+  <text x="60" y="70" font-family="Playfair Display, serif" font-size="24" font-weight="600" 
+        text-anchor="middle" fill="url(#textGradient)" opacity="0.8">M</text>
+</svg>

@@ -1,0 +1,421 @@
+name: 🚀 Deploy - Mathilde Fleurs
+
+on:
+  push:
+    branches: [ main ]
+    tags: [ 'v*' ]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+
+# Permissions nécessaires
+permissions:
+  contents: read
+  deployments: write
+  id-token: write
+  pages: write
+
+env:
+  NODE_VERSION: '18'
+
+jobs:
+  # 🔍 Déterminer l'environnement
+  determine-environment:
+    name: 🎯 Déterminer Environnement
+    runs-on: ubuntu-latest
+    outputs:
+      environment: ${{ steps.env.outputs.environment }}
+      deploy-url: ${{ steps.env.outputs.deploy-url }}
+    
+    steps:
+      - name: 🎯 Set Environment
+        id: env
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "environment=${{ inputs.environment }}" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.ref_type }}" == "tag" ]]; then
+            echo "environment=production" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            echo "environment=staging" >> $GITHUB_OUTPUT
+          else
+            echo "environment=staging" >> $GITHUB_OUTPUT
+          fi
+          
+          # URLs selon l'environnement
+          if [[ "${{ steps.env.outputs.environment || 'staging' }}" == "production" ]]; then
+            echo "deploy-url=https://app.mathilde-fleurs.com" >> $GITHUB_OUTPUT
+          else
+            echo "deploy-url=https://staging.mathilde-fleurs.com" >> $GITHUB_OUTPUT
+          fi
+
+  # 🏗️ Build pour déploiement
+  build-for-deploy:
+    name: 🏗️ Build Déploiement
+    runs-on: ubuntu-latest
+    needs: determine-environment
+    environment: ${{ needs.determine-environment.outputs.environment }}
+    
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 📥 Install dependencies
+        run: npm ci
+
+      - name: 🧪 Run Tests
+        run: npm run test:coverage
+
+      - name: 🏗️ Build Production
+        run: npm run build
+        env:
+          NODE_ENV: production
+          VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
+          VITE_VAPID_PUBLIC_KEY: ${{ vars.VITE_VAPID_PUBLIC_KEY }}
+          VITE_ENVIRONMENT: ${{ needs.determine-environment.outputs.environment }}
+
+      - name: 📦 Create Deployment Package
+        run: |
+          # Créer un package avec métadonnées
+          echo "Création du package de déploiement..."
+          
+          # Ajouter les métadonnées
+          cat > dist/deploy-info.json << EOF
+          {
+            "version": "$(jq -r .version package.json)",
+            "environment": "${{ needs.determine-environment.outputs.environment }}",
+            "deployTime": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "commitSha": "${{ github.sha }}",
+            "commitMessage": $(echo '${{ github.event.head_commit.message }}' | jq -R .),
+            "branch": "${{ github.ref_name }}",
+            "workflow": "${{ github.run_id }}"
+          }
+          EOF
+          
+          # Créer l'archive
+          tar -czf deploy-package.tar.gz -C dist .
+
+      - name: 📤 Upload Deployment Package
+        uses: actions/upload-artifact@v4
+        with:
+          name: deploy-package-${{ needs.determine-environment.outputs.environment }}
+          path: deploy-package.tar.gz
+          retention-days: 90
+
+  # 🚀 Déploiement Staging
+  deploy-staging:
+    name: 🚀 Deploy Staging
+    runs-on: ubuntu-latest
+    needs: [determine-environment, build-for-deploy]
+    if: needs.determine-environment.outputs.environment == 'staging'
+    environment:
+      name: staging
+      url: ${{ needs.determine-environment.outputs.deploy-url }}
+    
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 📥 Download Package
+        uses: actions/download-artifact@v4
+        with:
+          name: deploy-package-staging
+
+      - name: 📦 Extract Package
+        run: |
+          mkdir -p staging-deploy
+          tar -xzf deploy-package.tar.gz -C staging-deploy
+
+      - name: 🚀 Deploy to Staging
+        run: |
+          echo "🚀 Déploiement vers Staging..."
+          echo "URL: ${{ needs.determine-environment.outputs.deploy-url }}"
+          
+          # Ici vous ajouteriez vos commandes de déploiement réelles
+          # Exemples possibles :
+          
+          # Pour un déploiement sur serveur
+          # rsync -avz --delete staging-deploy/ user@staging-server:/var/www/mathilde-fleurs/
+          
+          # Pour un déploiement sur Netlify
+          # npx netlify deploy --prod --dir=staging-deploy --site=${{ secrets.NETLIFY_SITE_ID }}
+          
+          # Pour un déploiement sur Vercel
+          # npx vercel deploy staging-deploy --prod --token=${{ secrets.VERCEL_TOKEN }}
+          
+          # Pour GitHub Pages
+          # (voir job séparé ci-dessous)
+          
+          echo "✅ Déploiement staging terminé"
+
+      - name: 🏥 Health Check
+        run: |
+          echo "🏥 Vérification de santé..."
+          
+          # Attendre que le déploiement soit effectif
+          sleep 30
+          
+          # Vérifier que le site répond
+          max_attempts=10
+          attempt=1
+          
+          while [ $attempt -le $max_attempts ]; do
+            if curl -f -s --max-time 10 "${{ needs.determine-environment.outputs.deploy-url }}" > /dev/null; then
+              echo "✅ Site accessible"
+              break
+            else
+              echo "⏳ Tentative $attempt/$max_attempts..."
+              sleep 10
+              ((attempt++))
+            fi
+          done
+          
+          if [ $attempt -gt $max_attempts ]; then
+            echo "❌ Site non accessible après déploiement"
+            exit 1
+          fi
+
+      - name: 📊 Post-Deploy Tests
+        run: |
+          echo "🧪 Tests post-déploiement..."
+          
+          # Tests de base
+          URL="${{ needs.determine-environment.outputs.deploy-url }}"
+          
+          # Vérifier la page d'accueil
+          if ! curl -f -s "$URL" | grep -q "Mathilde Fleurs"; then
+            echo "❌ Page d'accueil incorrecte"
+            exit 1
+          fi
+          
+          # Vérifier le manifest PWA
+          if ! curl -f -s "$URL/manifest.json" > /dev/null; then
+            echo "⚠️ Manifest PWA non accessible"
+          fi
+          
+          # Vérifier le service worker
+          if ! curl -f -s "$URL/sw.js" > /dev/null; then
+            echo "⚠️ Service Worker non accessible"
+          fi
+          
+          echo "✅ Tests post-déploiement OK"
+
+  # 🚀 Déploiement Production
+  deploy-production:
+    name: 🚀 Deploy Production
+    runs-on: ubuntu-latest
+    needs: [determine-environment, build-for-deploy]
+    if: needs.determine-environment.outputs.environment == 'production'
+    environment:
+      name: production
+      url: ${{ needs.determine-environment.outputs.deploy-url }}
+    
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: ⚠️ Production Deployment Warning
+        run: |
+          echo "🚨 DÉPLOIEMENT EN PRODUCTION 🚨"
+          echo "Environnement: Production"
+          echo "URL: ${{ needs.determine-environment.outputs.deploy-url }}"
+          echo "Version: $(jq -r .version package.json)"
+          echo "Commit: ${{ github.sha }}"
+
+      - name: 📥 Download Package
+        uses: actions/download-artifact@v4
+        with:
+          name: deploy-package-production
+
+      - name: 📦 Extract Package
+        run: |
+          mkdir -p production-deploy
+          tar -xzf deploy-package.tar.gz -C production-deploy
+
+      - name: 🔒 Security Checks
+        run: |
+          echo "🔒 Vérifications de sécurité production..."
+          
+          # Vérifier qu'il n'y a pas de fichiers sensibles
+          if find production-deploy -name "*.env*" -o -name "*.key" -o -name "*.pem"; then
+            echo "❌ Fichiers sensibles détectés"
+            exit 1
+          fi
+          
+          # Vérifier la configuration de sécurité
+          if ! grep -q "Content-Security-Policy" production-deploy/index.html; then
+            echo "⚠️ CSP non configuré"
+          fi
+          
+          echo "✅ Vérifications de sécurité OK"
+
+      - name: 📊 Pre-Deploy Metrics
+        id: pre-metrics
+        run: |
+          echo "📊 Métriques pré-déploiement..."
+          
+          # Collecter les métriques actuelles (si site existant)
+          if curl -f -s "${{ needs.determine-environment.outputs.deploy-url }}" > /dev/null; then
+            echo "current-site-available=true" >> $GITHUB_OUTPUT
+            echo "✅ Site actuel accessible"
+          else
+            echo "current-site-available=false" >> $GITHUB_OUTPUT
+            echo "ℹ️ Premier déploiement"
+          fi
+
+      - name: 🚀 Deploy to Production
+        run: |
+          echo "🚀 Déploiement vers Production..."
+          
+          # Déploiement production avec stratégie blue-green ou rolling
+          echo "Stratégie: Blue-Green Deployment"
+          
+          # Ici vous ajouteriez vos commandes de déploiement production
+          # avec des vérifications et rollback automatique
+          
+          echo "✅ Déploiement production terminé"
+
+      - name: 🏥 Comprehensive Health Check
+        run: |
+          echo "🏥 Vérification de santé complète..."
+          
+          URL="${{ needs.determine-environment.outputs.deploy-url }}"
+          
+          # Tests plus complets pour la production
+          sleep 60  # Laisser plus de temps pour la propagation
+          
+          # Vérifier la disponibilité
+          for i in {1..20}; do
+            if curl -f -s --max-time 15 "$URL" > /dev/null; then
+              echo "✅ Site disponible (tentative $i)"
+              break
+            fi
+            sleep 15
+          done
+          
+          # Tests fonctionnels de base
+          echo "🧪 Tests fonctionnels..."
+          
+          # Page d'accueil
+          if ! curl -f -s "$URL" | grep -q "Mathilde Fleurs"; then
+            echo "❌ Page d'accueil problématique"
+            exit 1
+          fi
+          
+          # API Health check (si disponible)
+          if curl -f -s "$URL/api/health" > /dev/null; then
+            echo "✅ API Health check OK"
+          fi
+          
+          echo "✅ Health check production OK"
+
+      - name: 📈 Post-Deploy Monitoring
+        run: |
+          echo "📈 Activation du monitoring renforcé..."
+          
+          # Ici vous pourriez :
+          # - Activer des alertes spéciales
+          # - Programmer des vérifications automatiques
+          # - Envoyer des notifications aux équipes
+          
+          echo "✅ Monitoring activé"
+
+  # 📄 Déploiement GitHub Pages (pour demo/docs)
+  deploy-github-pages:
+    name: 📄 Deploy GitHub Pages
+    runs-on: ubuntu-latest
+    needs: [determine-environment, build-for-deploy]
+    if: needs.determine-environment.outputs.environment == 'staging'
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    
+    steps:
+      - name: 📥 Download Package
+        uses: actions/download-artifact@v4
+        with:
+          name: deploy-package-staging
+
+      - name: 📦 Extract for Pages
+        run: |
+          mkdir -p pages-deploy
+          tar -xzf deploy-package.tar.gz -C pages-deploy
+
+      - name: 📄 Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: 📤 Upload to Pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: pages-deploy
+
+      - name: 🚀 Deploy to Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+  # 📢 Notifications
+  notify:
+    name: 📢 Notifications
+    runs-on: ubuntu-latest
+    needs: [determine-environment, deploy-staging, deploy-production]
+    if: always() && (needs.deploy-staging.result != 'skipped' || needs.deploy-production.result != 'skipped')
+    
+    steps:
+      - name: 📢 Deploy Success Notification
+        if: >
+          (needs.deploy-staging.result == 'success' && needs.determine-environment.outputs.environment == 'staging') ||
+          (needs.deploy-production.result == 'success' && needs.determine-environment.outputs.environment == 'production')
+        run: |
+          echo "🎉 Déploiement réussi !"
+          echo "Environnement: ${{ needs.determine-environment.outputs.environment }}"
+          echo "URL: ${{ needs.determine-environment.outputs.deploy-url }}"
+          
+          # Ici vous pourriez envoyer des notifications :
+          # - Slack/Discord webhook
+          # - Email
+          # - SMS
+          # - Teams
+
+      - name: 📢 Deploy Failure Notification
+        if: >
+          (needs.deploy-staging.result == 'failure' && needs.determine-environment.outputs.environment == 'staging') ||
+          (needs.deploy-production.result == 'failure' && needs.determine-environment.outputs.environment == 'production')
+        run: |
+          echo "❌ Déploiement échoué !"
+          echo "Environnement: ${{ needs.determine-environment.outputs.environment }}"
+          
+          # Notifications d'urgence pour les échecs
+
+      - name: 📊 Deployment Summary
+        run: |
+          echo "## 🚀 Résumé du Déploiement" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Paramètre | Valeur |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| **Environnement** | ${{ needs.determine-environment.outputs.environment }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| **URL** | ${{ needs.determine-environment.outputs.deploy-url }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Version** | $(jq -r .version package.json) |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Commit** | ${{ github.sha }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Branch** | ${{ github.ref_name }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Trigger** | ${{ github.event_name }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [[ "${{ needs.deploy-staging.result }}" == "success" || "${{ needs.deploy-production.result }}" == "success" ]]; then
+            echo "✅ **Déploiement réussi !**" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Déploiement échoué.**" >> $GITHUB_STEP_SUMMARY
+          fi

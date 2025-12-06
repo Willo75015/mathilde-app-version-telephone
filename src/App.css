@@ -1,0 +1,33 @@
+/* App.css - Styles spécifiques au composant App selon Smart Use */
+
+.app-container {
+  min-height: 100vh;
+  background-color: rgb(249 250 251); /* gray-50 */
+  transition: background-color 0.3s ease;
+}
+
+.dark .app-container {
+  background-color: rgb(17 24 39); /* gray-900 */
+}
+
+/* Optimisations performance selon cahier des charges */
+.app-container {
+  will-change: background-color;
+  transform: translateZ(0); /* Force GPU acceleration */
+}
+
+/* Animation pour les notifications Kanban */
+@keyframes slide-in {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-in {
+  animation: slide-in 0.3s ease-out;
+}

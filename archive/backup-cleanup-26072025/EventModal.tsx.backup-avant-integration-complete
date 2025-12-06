@@ -1,0 +1,741 @@
+import React, { useState, useEffect, useCallback, useMemo } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { 
+  X, Edit, Calendar, MapPin, DollarSign, Phone, 
+  User, Clock, FileText, Users, CheckCircle, 
+  XCircle, AlertCircle, MessageSquare, Trash2,
+  Plus
+} from 'lucide-react'
+import { Event, Client } from '@/types'
+import Button from '@/components/ui/Button'
+import PhoneInput from '@/components/ui/PhoneInput'
+import FloristCard from '@/components/ui/FloristCard'  // 🆕 Import du composant réutilisable
+import FloristAssignmentComplete from './FloristAssignmentComplete'  // 🆕 Composant complet d'assignation
+import { useEventSync, useModalEventSync } from '@/hooks/useEventSync'
+import { useApp, useFlorists } from '@/contexts/AppContext'
+
+// Types pour les fleuristes
+interface Florist {
+  id: string
+  name: string
+  role: string
+  status: 'available' | 'unavailable' | 'busy'
+  avatar?: string
+}
+
+interface FloristAssignment {
+  floristId: string
+  status: 'pending' | 'confirmed' | 'refused' | 'not_selected' // 🆕
+  assignedAt: Date
+}
+
+interface EventModalProps {
+  event: Event | null
+  client?: Client
+  isOpen: boolean
+  onClose: () => void
+  onEdit?: (event: Event) => void
+  initialView?: 'details' | 'assignment'
+}
+
+const EventModal: React.FC<EventModalProps> = ({
+  event,
+  client,
+  isOpen,
+  onClose,
+  onEdit,
+  initialView = 'details'
+}) => {
+  // 🔧 CORRECTION: Utiliser initialView seulement à l'ouverture
+  const [currentView, setCurrentView] = useState<'details' | 'assignment'>('details')
+  
+  // 🔧 CORRECTION: Ordre des hooks fixe et memoization pour éviter warnings
+  const { state, actions } = useApp()
+  const { emitEventSync } = useEventSync()
+  const { latestEvent } = useModalEventSync(event?.id || null, 'EventModal')
+  
+  // 🔧 Récupérer florists depuis le state directement pour éviter double useApp
+  const florists = useMemo(() => state.florists || [], [state.florists])
+
+  // State pour les notifications
+  const [showLimitReachedPopup, setShowLimitReachedPopup] = useState(false)
+  const [showMaxReachedAlert, setShowMaxReachedAlert] = useState(false)
+  
+  // State local pour l'édition (clone de l'événement)
+  const [editedEvent, setEditedEvent] = useState<Event | null>(null)
+  
+  // Assignations basées sur l'événement réel
+  const [assignments, setAssignments] = useState<FloristAssignment[]>([])
+
+  // 🔧 CORRECTION: Fusionner tous les useEffect en un seul avec flag
+  const [isInitialized, setIsInitialized] = useState(false)
+  
+  useEffect(() => {
+    if (!isOpen) {
+      // Reset quand fermé
+      setIsInitialized(false)
+      setEditedEvent(null)
+      setAssignments([])
+      setCurrentView('details')
+      return
+    }
+
+    // Éviter les re-initialisations inutiles
+    if (isInitialized) return
+
+    console.log('🔄 EventModal - Initialisation unique...')
+    
+    // 1. Initialiser la vue
+    setCurrentView(initialView)
+    
+    // 2. Initialiser l'événement
+    const currentEvent = latestEvent || event
+    if (currentEvent) {
+      console.log('🔄 EventModal - Initialisation avec données récentes:', {
+        eventId: currentEvent.id,
+        assignedFlorists: currentEvent.assignedFlorists?.length || 0,
+        isLatest: !!latestEvent
+      })
+      setEditedEvent({ ...currentEvent })
+      
+      // 3. Initialiser les assignations
+      if (currentEvent.assignedFlorists) {
+        const newAssignments = currentEvent.assignedFlorists.map(af => ({
+          floristId: af.floristId,
+          status: af.status || (af.isConfirmed ? 'confirmed' : af.isRefused ? 'refused' : 'pending') as const,
+          assignedAt: af.assignedAt
+        }))
+        setAssignments(newAssignments)
+        console.log('✅ EventModal - Assignations chargées:', newAssignments)
+      } else {
+        setAssignments([])
+      }
+    } else {
+      // Mode création - nouvel événement
+      console.log('🆕 EventModal - Mode création nouvel événement')
+      const newEvent: Event = {
+        id: `temp-${Date.now()}`,
+        title: '',
+        description: '',
+        date: new Date(),
+        time: '09:00',
+        endTime: '17:00',
+        location: '',
+        clientId: '',
+        clientPhone: '',
+        budget: 0,
+        status: 'draft' as any,
+        flowers: [],
+        floristsRequired: 2,
+        assignedFlorists: [],
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }
+      setEditedEvent(newEvent)
+      setAssignments([])
+    }
+    
+    setIsInitialized(true)
+    console.log('✅ EventModal - Initialisation terminée')
+    
+  }, [isOpen, event, latestEvent, initialView, isInitialized])
+
+  // 🔧 CORRECTION: Hook pour mettre à jour seulement les assignations quand latestEvent change
+  useEffect(() => {
+    if (!isOpen || !isInitialized || !latestEvent) return
+    
+    // Si l'événement a été mis à jour par synchronisation
+    if (latestEvent.id === editedEvent?.id && latestEvent.assignedFlorists) {
+      console.log('🔄 EventModal - Mise à jour assignations depuis sync:', latestEvent.id)
+      
+      const updatedAssignments = latestEvent.assignedFlorists.map(af => ({
+        floristId: af.floristId,
+        status: af.status || (af.isConfirmed ? 'confirmed' : af.isRefused ? 'refused' : 'pending') as const,
+        assignedAt: af.assignedAt
+      }))
+      
+      setAssignments(updatedAssignments)
+      setEditedEvent({ ...latestEvent })
+    }
+  }, [latestEvent, isOpen, isInitialized, editedEvent?.id])
+
+  // 🆕 Récupérer tous les fleuristes depuis les événements existants
+  const getAllFloristsFromEvents = useCallback(() => {
+    const floristsMap = new Map()
+    
+    // Récupérer tous les événements
+    const allEvents = state.events || []
+    
+    // Parcourir tous les événements pour extraire les fleuristes
+    allEvents.forEach(event => {
+      event.assignedFlorists?.forEach(af => {
+        if (!floristsMap.has(af.floristId)) {
+          floristsMap.set(af.floristId, {
+            id: af.floristId,
+            name: af.floristName,
+            role: af.floristRole || 'Fleuriste', 
+            status: 'available' // Par défaut disponible, sera calculé par getFloristStatus
+          })
+        }
+      })
+    })
+    
+    // Ajouter les fleuristes de base s'ils ne sont pas dans les événements
+    const baseFlorists = [
+      { id: '1', name: 'Marie Dubois', role: 'Assistant Fleuriste', status: 'available' },
+      { id: '2', name: 'Paul Renault', role: 'Responsable Décoration', status: 'available' },
+      { id: '3', name: 'Jean Moreau', role: 'Spécialiste Mariage', status: 'available' },
+      { id: '4', name: 'Sophie Laurent', role: 'Senior Fleuriste', status: 'available' },
+      { id: '5', name: 'Claire Petit', role: 'Junior Fleuriste', status: 'busy' },
+      { id: '6', name: 'Marc Durand', role: 'Créateur Bouquets', status: 'unavailable' }
+    ]
+    
+    baseFlorists.forEach(florist => {
+      if (!floristsMap.has(florist.id)) {
+        floristsMap.set(florist.id, florist)
+      }
+    })
+    
+    return Array.from(floristsMap.values())
+  }, [state.events])
+
+  // 🔧 CORRECTION: Memoizer les fleuristes pour éviter les recalculs
+  const availableFlorists = useMemo(() => {
+    return florists?.length > 0 ? florists : getAllFloristsFromEvents()
+  }, [florists, getAllFloristsFromEvents])
+
+  // 🔧 CORRECTION: Utiliser des hooks sans recalculs inutiles
+  const { updateEventWithTeamCheck } = useApp()
+  const { syncFloristAssignments } = useEventSync()
+  
+  // Référence pour gérer le scroll
+  const scrollContainerRef = React.useRef<HTMLDivElement>(null)
+
+  // 🔧 CORRECTION: Memoizer les calculs pour éviter les re-renders
+  const floristStats = useMemo(() => {
+    if (!editedEvent || !assignments) return { required: 0, confirmed: 0, percentage: 0 }
+    
+    const requiredFlorists = editedEvent.floristsRequired || 4
+    const confirmedCount = assignments.filter(a => a.status === 'confirmed').length
+    const progressPercentage = Math.min((confirmedCount / requiredFlorists) * 100, 100)
+    
+    return {
+      required: requiredFlorists,
+      confirmed: confirmedCount,
+      percentage: progressPercentage
+    }
+  }, [editedEvent, assignments])
+
+  // 🔧 CORRECTION: Memoizer les fleuristes disponibles
+  const assignedFloristIds = useMemo(() => 
+    assignments.map(a => a.floristId), [assignments]
+  )
+  
+  const unassignedFlorists = useMemo(() => 
+    availableFlorists.filter(f => !assignedFloristIds.includes(f.id)), 
+    [availableFlorists, assignedFloristIds]
+  )
+
+  // Fonction helper pour synchroniser immédiatement les assignations
+  const syncAssignmentsImmediately = useCallback((newAssignments: FloristAssignment[]) => {
+    if (!editedEvent) return
+    
+    const updatedAssignedFlorists = newAssignments.map(assignment => ({
+      floristId: assignment.floristId,
+      floristName: availableFlorists.find(f => f.id === assignment.floristId)?.name || '',
+      isConfirmed: assignment.status === 'confirmed',
+      isRefused: assignment.status === 'refused',
+      status: assignment.status,
+      assignedAt: assignment.assignedAt
+    }))
+    
+    console.log('⚡ EventModal - AVANT updateEventWithTeamCheck:', {
+      eventId: editedEvent.id,
+      assignedFlorists: updatedAssignedFlorists,
+      confirmedCount: updatedAssignedFlorists.filter(f => f.status === 'confirmed').length
+    })
+    
+    // 🆕 Utiliser la nouvelle fonction avec vérification d'équipe complète
+    updateEventWithTeamCheck(editedEvent.id, { 
+      assignedFlorists: updatedAssignedFlorists 
+    })
+    
+    // Synchroniser avec les autres modals immédiatement
+    syncFloristAssignments(editedEvent.id, updatedAssignedFlorists, 'EventModal')
+    
+    console.log('⚡ EventModal - Synchronisation avec vérification équipe:', {
+      eventId: editedEvent.id,
+      assignmentsCount: newAssignments.length
+    })
+  }, [editedEvent, availableFlorists, updateEventWithTeamCheck, syncFloristAssignments])
+
+  const getFloristsByStatus = useCallback((status: FloristAssignment['status']) => {
+    return assignments
+      .filter(a => a.status === status)
+      .map(a => availableFlorists.find(f => f.id === a.floristId)!)
+      .filter(Boolean)
+  }, [assignments, availableFlorists])
+
+  const handleAddFlorist = useCallback((florist: Florist) => {
+    // Sauvegarder la position de scroll avant l'ajout
+    const scrollPosition = scrollContainerRef.current?.scrollTop || 0
+    
+    const newAssignments = [...assignments, {
+      floristId: florist.id,
+      status: 'pending' as const, // Ajouter en "pending" d'abord
+      assignedAt: new Date()
+    }]
+    
+    setAssignments(newAssignments)
+    
+    // Synchroniser immédiatement avec les autres modals
+    syncAssignmentsImmediately(newAssignments)
+    
+    // Restaurer la position de scroll après le re-render
+    setTimeout(() => {
+      if (scrollContainerRef.current) {
+        scrollContainerRef.current.scrollTop = scrollPosition
+      }
+    }, 0)
+  }, [assignments, syncAssignmentsImmediately])
+
+  const handleUpdateFloristStatus = useCallback((floristId: string, newStatus: FloristAssignment['status']) => {
+    // Vérifier la limite seulement si on essaie de confirmer
+    if (newStatus === 'confirmed') {
+      const currentConfirmed = assignments.filter(a => a.status === 'confirmed').length
+      
+      if (currentConfirmed >= floristStats.required) {
+        setShowMaxReachedAlert(true)
+        setTimeout(() => setShowMaxReachedAlert(false), 3000)
+        return
+      }
+    }
+    
+    // Sauvegarder la position de scroll
+    const scrollPosition = scrollContainerRef.current?.scrollTop || 0
+    
+    const newAssignments = assignments.map(a => 
+      a.floristId === floristId ? { ...a, status: newStatus } : a
+    )
+    
+    console.log('🔧 AVANT handleUpdateFloristStatus:', {
+      floristId,
+      oldStatus: assignments.find(a => a.floristId === floristId)?.status,
+      newStatus,
+      newConfirmedCount: newAssignments.filter(a => a.status === 'confirmed').length,
+      requiredFlorists: floristStats.required
+    })
+    
+    setAssignments(newAssignments)
+    
+    // 🆕 VÉRIFICATION AUTO-PASSAGE APRÈS CHANGEMENT DE STATUT
+    const confirmedCount = newAssignments.filter(a => a.status === 'confirmed').length
+    if (confirmedCount >= floristStats.required) {
+      console.log('🎉 ÉQUIPE COMPLÈTE DÉTECTÉE ! Auto-passage des "pending" → "not_selected"')
+      
+      // Passer automatiquement tous les "pending" en "not_selected"
+      const finalAssignments = newAssignments.map(a => {
+        if (a.status === 'pending') {
+          console.log(`📝 Auto-passage: ${availableFlorists.find(f => f.id === a.floristId)?.name} → "not_selected"`)
+          return { ...a, status: 'not_selected' as const }
+        }
+        return a
+      })
+      
+      setAssignments(finalAssignments)
+      syncAssignmentsImmediately(finalAssignments)
+    } else {
+      // Synchronisation normale
+      syncAssignmentsImmediately(newAssignments)
+    }
+    
+    // Vérifier si on vient d'atteindre la limite de confirmés
+    if (newStatus === 'confirmed') {
+      const newConfirmedCount = assignments.filter(a => a.status === 'confirmed').length + 1
+      if (newConfirmedCount === floristStats.required) {
+        setTimeout(() => {
+          setShowLimitReachedPopup(true)
+        }, 100)
+      }
+    }
+    
+    // Restaurer la position
+    setTimeout(() => {
+      if (scrollContainerRef.current) {
+        scrollContainerRef.current.scrollTop = scrollPosition
+      }
+    }, 0)
+  }, [assignments, floristStats.required, availableFlorists, syncAssignmentsImmediately])
+
+  const handleRemoveFlorist = useCallback((floristId: string) => {
+    // Sauvegarder la position de scroll
+    const scrollPosition = scrollContainerRef.current?.scrollTop || 0
+    
+    const newAssignments = assignments.filter(a => a.floristId !== floristId)
+    setAssignments(newAssignments)
+    
+    // Synchroniser immédiatement avec les autres modals
+    syncAssignmentsImmediately(newAssignments)
+    
+    // Restaurer la position
+    setTimeout(() => {
+      if (scrollContainerRef.current) {
+        scrollContainerRef.current.scrollTop = scrollPosition
+      }
+    }, 0)
+  }, [assignments, syncAssignmentsImmediately])
+
+  // Fonctions pour mettre à jour l'événement en cours d'édition
+  const updateEventField = useCallback((field: keyof Event, value: any) => {
+    if (editedEvent) {
+      setEditedEvent(prev => prev ? { ...prev, [field]: value } : null)
+    }
+  }, [editedEvent])
+
+  // 🔧 CORRECTION: Sauvegarder les modifications avec validation
+  const handleSave = useCallback(() => {
+    if (!editedEvent || !onEdit) {
+      console.error('❌ Pas d\'événement à sauvegarder ou pas de fonction onEdit')
+      return
+    }
+    
+    // 🛡️ VALIDATION DES CHAMPS OBLIGATOIRES
+    const errors: string[] = []
+    
+    if (!editedEvent.title || editedEvent.title.trim() === '') {
+      errors.push('Le titre est requis')
+    }
+    
+    if (!editedEvent.date) {
+      errors.push('La date est requise')
+    }
+    
+    if (!editedEvent.location || editedEvent.location.trim() === '') {
+      errors.push('Le lieu est requis')
+    }
+    
+    if (!editedEvent.clientId || editedEvent.clientId.trim() === '') {
+      errors.push('Le client est requis')
+    }
+    
+    if (editedEvent.budget <= 0) {
+      errors.push('Le budget doit être positif')
+    }
+    
+    if (errors.length > 0) {
+      console.error('🔥 DÉTAIL DES ERREURS:', errors)
+      alert('Erreurs de validation:\n' + errors.join('\n'))
+      return
+    }
+    
+    // 🔧 CORRECTION : Logique de création vs modification robuste
+    const isCreating = !event || !event.id || event.id.startsWith('temp-') || event.id.startsWith('event-temp-')
+    
+    // Synchroniser les assignations avec l'événement
+    const updatedEvent = {
+      ...editedEvent,
+      // Générer un nouvel ID si c'est une création
+      id: isCreating ? `event-${Date.now()}-${Math.random().toString(36).substr(2, 9)}` : editedEvent.id,
+      assignedFlorists: assignments.map(assignment => ({
+        floristId: assignment.floristId,
+        floristName: availableFlorists.find(f => f.id === assignment.floristId)?.name || '',
+        isConfirmed: assignment.status === 'confirmed',
+        isRefused: assignment.status === 'refused',
+        status: assignment.status,
+        assignedAt: assignment.assignedAt
+      })),
+      floristsRequired: floristStats.required,
+      // Mettre à jour le statut de l'événement selon les assignations
+      status: floristStats.confirmed >= floristStats.required ? 'confirmed' : editedEvent.status,
+      // Mettre à jour les timestamps
+      createdAt: isCreating ? new Date() : editedEvent.createdAt,
+      updatedAt: new Date()
+    }
+    
+    console.log(`💾 EventModal - ${isCreating ? 'Création' : 'Modification'} événement:`, {
+      eventId: updatedEvent.id,
+      title: updatedEvent.title,
+      date: updatedEvent.date,
+      clientId: updatedEvent.clientId,
+      budget: updatedEvent.budget,
+      location: updatedEvent.location,
+      floristsRequired: floristStats.required,
+      assignedFlorists: updatedEvent.assignedFlorists,
+      confirmedCount: floristStats.confirmed,
+      newStatus: updatedEvent.status
+    })
+    
+    try {
+      // Émettre la synchronisation AVANT l'appel onEdit
+      emitEventSync(updatedEvent, 'EventModal')
+      
+      // Appel onEdit pour maintenir la compatibilité (gère création ET modification)
+      onEdit(updatedEvent)
+      
+      console.log('✅ Événement sauvegardé avec succès')
+      onClose()
+    } catch (error) {
+      console.error('❌ Erreur lors de la sauvegarde:', error)
+      alert('Erreur lors de la sauvegarde: ' + (error as Error).message)
+    }
+  }, [editedEvent, onEdit, assignments, availableFlorists, floristStats, event, emitEventSync, onClose])
+
+  // Annuler les modifications
+  const handleCancel = useCallback(() => {
+    if (event) {
+      setEditedEvent({ ...event }) // Reset aux valeurs originales
+    }
+    onClose()
+  }, [event, onClose])
+
+  // 🔧 CORRECTION: Toujours retourner un JSX même si fermé pour éviter warnings hooks
+  return (
+    <AnimatePresence>
+      {isOpen && editedEvent && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="event-modal-container"
+          onClick={onClose}
+        >
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.9, opacity: 0 }}
+            className="event-modal-content"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="event-modal-header flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <input
+                  type="text"
+                  value={editedEvent.title}
+                  onChange={(e) => updateEventField('title', e.target.value)}
+                  className="bg-transparent border-b-2 border-primary-500 focus:outline-none focus:border-primary-600 text-2xl font-bold text-gray-900 dark:text-white"
+                  placeholder={event ? "Nom de l'événement" : "Nom du nouvel événement"}
+                />
+                
+                {/* Bouton Traiter Urgent */}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="px-4 border-orange-300 text-orange-600 hover:bg-orange-50"
+                >
+                  ⚠ Traiter Urgent
+                </Button>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                {/* Boutons de navigation */}
+                <Button
+                  variant={currentView === 'details' ? 'primary' : 'ghost'}
+                  size="sm"
+                  onClick={() => setCurrentView('details')}
+                >
+                  📋 Détails
+                </Button>
+                
+                <Button
+                  variant={currentView === 'assignment' ? 'primary' : 'ghost'}
+                  size="sm"
+                  onClick={() => setCurrentView('assignment')}
+                >
+                  👥 Assignation
+                </Button>
+
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={onClose}
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+
+            {/* Contenu principal */}
+            <div className="flex-1 overflow-hidden">
+              {currentView === 'details' && (
+                <div className="p-6 overflow-y-auto">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Informations de base */}
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          Description
+                        </label>
+                        <textarea
+                          value={editedEvent.description}
+                          onChange={(e) => updateEventField('description', e.target.value)}
+                          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                          rows={3}
+                          placeholder="Description de l'événement..."
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            Date
+                          </label>
+                          <input
+                            type="date"
+                            value={editedEvent.date ? editedEvent.date.toISOString().split('T')[0] : ''}
+                            onChange={(e) => updateEventField('date', new Date(e.target.value))}
+                            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            Heure
+                          </label>
+                          <input
+                            type="time"
+                            value={editedEvent.time}
+                            onChange={(e) => updateEventField('time', e.target.value)}
+                            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          Lieu
+                        </label>
+                        <input
+                          type="text"
+                          value={editedEvent.location}
+                          onChange={(e) => updateEventField('location', e.target.value)}
+                          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                          placeholder="Lieu de l'événement"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          Budget (€)
+                        </label>
+                        <input
+                          type="number"
+                          value={editedEvent.budget}
+                          onChange={(e) => updateEventField('budget', Number(e.target.value))}
+                          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                          min="0"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Informations client */}
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Informations Client</h3>
+                      
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          Client ID
+                        </label>
+                        <input
+                          type="text"
+                          value={editedEvent.clientId}
+                          onChange={(e) => updateEventField('clientId', e.target.value)}
+                          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                          placeholder="ID du client"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          Téléphone
+                        </label>
+                        <PhoneInput
+                          value={editedEvent.clientPhone || ''}
+                          onChange={(phone) => updateEventField('clientPhone', phone)}
+                          placeholder="Téléphone du client"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          Fleuristes requis
+                        </label>
+                        <input
+                          type="number"
+                          value={editedEvent.floristsRequired || 2}
+                          onChange={(e) => updateEventField('floristsRequired', Number(e.target.value))}
+                          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                          min="1"
+                          max="10"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {currentView === 'assignment' && (
+                <div className="event-modal-body">
+                  <FloristAssignmentComplete
+                    editedEvent={editedEvent}
+                    allEvents={allEvents}
+                    onUpdateFloristStatus={handleUpdateFloristStatus}
+                    onRemoveFlorist={handleRemoveFlorist}
+                    onAddFlorist={handleAddFlorist}
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="flex justify-between items-center p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+              <div className="text-sm text-gray-500">
+                {floristStats.confirmed}/{floristStats.required} fleuriste confirmé
+              </div>
+
+              <div className="flex space-x-3">
+                <Button variant="outline" onClick={handleCancel}>
+                  Annuler
+                </Button>
+                <Button onClick={handleSave}>
+                  ✅ Valider & Synchroniser
+                </Button>
+              </div>
+            </div>
+
+            {/* Popups de notification */}
+            <AnimatePresence>
+              {showLimitReachedPopup && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  className="absolute top-4 right-4 bg-green-100 border border-green-300 rounded-lg p-4 shadow-lg"
+                >
+                  <p className="text-green-700 font-medium">
+                    🎉 Équipe complète ! L'événement peut être confirmé.
+                  </p>
+                </motion.div>
+              )}
+
+              {showMaxReachedAlert && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  className="absolute top-4 right-4 bg-orange-100 border border-orange-300 rounded-lg p-4 shadow-lg"
+                >
+                  <p className="text-orange-700 font-medium">
+                    ⚠️ Maximum de fleuristes atteint
+                  </p>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  )
+}
+
+export default EventModal

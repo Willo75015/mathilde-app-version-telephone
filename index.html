@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <!-- ⚠️ Headers de sécurité maintenant gérés via Vite server headers ⚠️ -->
+  <!-- PWA Meta -->
+  <meta name="theme-color" content="#10b981">
+  <meta name="background_color" content="#ffffff">
+  <meta name="display" content="standalone">
+  <meta name="orientation" content="portrait">
+  
+  <!-- Icônes -->
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <!-- <link rel="manifest" href="/manifest.json"> Temporairement désactivé pour debug -->
+  
+  <!-- Fonts avec preload pour performance -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" as="style">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+  
+  <title>Mathilde Fleurs - Gestion d'Événements</title>
+  
+  <!-- Preload optimisé pour dev et prod -->
+  <script>
+    // Preload intelligent avec bon timing
+    window.addEventListener('DOMContentLoaded', () => {
+      // Preload seulement si pas déjà en cache
+      if (!document.querySelector('script[src="/src/main.tsx"]')) {
+        const preloadScript = document.createElement('link')
+        preloadScript.rel = 'modulepreload'  // Correct pour les modules
+        preloadScript.href = '/src/main.tsx'
+        document.head.appendChild(preloadScript)
+      }
+      
+      // Image PWA seulement en production
+      if (window.location.protocol === 'https:' && document.querySelector('link[rel="manifest"]')) {
+        const preloadImage = document.createElement('link')
+        preloadImage.rel = 'preload'
+        preloadImage.href = '/pwa-192x192.png'
+        preloadImage.as = 'image'
+        document.head.appendChild(preloadImage)
+      }
+    })
+  </script>
+</head>
+<body>
+  <div id="root"></div>
+  
+  <!-- Service Worker Registration - TOTALEMENT DÉSACTIVÉ EN DEV -->
+  <script>
+    // DÉSACTIVER TOTALEMENT LE SW EN DÉVELOPPEMENT
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+      console.log('🔧 Mode développement - SW complètement désactivé')
+      
+      // Désinstaller tous les SW existants
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(function(registrations) {
+          registrations.forEach(function(registration) {
+            registration.unregister()
+          })
+        })
+        
+        // Vider les caches
+        caches.keys().then(function(cacheNames) {
+          return Promise.all(cacheNames.map(function(cacheName) {
+            return caches.delete(cacheName)
+          }))
+        })
+      }
+    } else {
+      // SW uniquement en production
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js')
+            .then(registration => {
+              console.log('✅ SW registered for production:', registration.scope)
+            })
+        })
+      }
+    }
+  </script>
+  
+  <script type="module" src="/src/main.tsx"></script>
+</body>
+</html>

@@ -1,0 +1,53 @@
+{
+  "project": {
+    "name": "Mathilde App",
+    "type": "React/TypeScript Web Application",
+    "description": "Application de gestion pour fleuristes avec événements et facturation",
+    "version": "current"
+  },
+  "tech_stack": {
+    "frontend": "React + TypeScript",
+    "styling": "Tailwind CSS",
+    "build": "Vite",
+    "testing": "Tests intégrés"
+  },
+  "agents": {
+    "orchestrator": {
+      "active": true,
+      "role": "coordination",
+      "priority": 1
+    },
+    "architect": {
+      "active": true,
+      "role": "technical-analysis",
+      "priority": 2
+    },
+    "dev": {
+      "active": true,
+      "role": "implementation",
+      "priority": 3
+    },
+    "qa": {
+      "active": true,
+      "role": "testing",
+      "priority": 4
+    },
+    "analyst": {
+      "active": true,
+      "role": "requirements-analysis",
+      "priority": 2
+    }
+  },
+  "collaboration": {
+    "mode": "brownfield",
+    "existing_codebase": true,
+    "documentation_heavy": true
+  },
+  "focus_areas": [
+    "Code analysis",
+    "Bug fixing", 
+    "Feature enhancement",
+    "Documentation improvement",
+    "Testing strategies"
+  ]
+}

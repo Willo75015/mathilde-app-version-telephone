@@ -1,0 +1,2169 @@
+import React, { useState, useEffect } from 'react'
+import { Clock, CheckCircle, AlertCircle, Calendar as CalendarIcon, Kanban, Plus, X, MapPin, User, Euro, Archive, DollarSign, Smile, Bell, Edit, Settings, Phone } from 'lucide-react'
+import { KANBAN_COLUMNS, EventStatus, getKanbanColumn } from '@/types'
+import EventModal from '@/components/events/EventModal'
+// import { useEventSync } from '@/hooks/useEventSync' // ⚠️ TEMPORAIREMENT DÉSACTIVÉ
+import { useApp } from '@/contexts/AppContext'
+
+type ViewMode = 'calendrier' | 'kanban'
+
+interface Event {
+  id: string
+  title: string
+  description: string
+  date: string
+  endDate?: string
+  time: string
+  endTime: string
+  location: string
+  budget: number
+  status: EventStatus
+  clientName: string
+  clientId: string
+  hasFlorist: boolean
+  floristName?: string
+  floristsRequired?: number
+  assignedFlorists?: Array<{
+    id: string
+    name: string
+    phone: string
+    speciality: string
+  }>
+  category: 'mariage' | 'anniversaire' | 'entreprise' | 'funeraire' | 'decoration' | 'autre'
+  color: string
+  isInvoiced?: boolean
+  archiveDate?: string
+}
+
+const CalendarPage: React.FC = () => {
+  const [viewMode, setViewMode] = useState<ViewMode>('calendrier')
+  const [selectedDay, setSelectedDay] = useState<string | null>(null)
+  const [selectedClient, setSelectedClient] = useState<string | null>(null)
+  
+  // Utiliser le state global au lieu des données statiques
+  const { state, actions } = useApp()
+  
+  // Hook de synchronisation pour écouter les changements d'événements
+  // const { subscribeToEventChanges } = useEventSync() // ⚠️ TEMPORAIREMENT DÉSACTIVÉ
+  
+  // State pour forcer le re-render quand les événements changent
+  // const [syncTrigger, setSyncTrigger] = useState(0) // ⚠️ TEMPORAIREMENT DÉSACTIVÉ
+  
+  // Navigation calendrier - Commence à aujourd'hui
+  const [currentDate, setCurrentDate] = useState(new Date()) // Date d'aujourd'hui
+  
+  // États pour le Kanban drag & drop
+  const [draggedEvent, setDraggedEvent] = useState<Event | null>(null)
+  const [showArchiveModal, setShowArchiveModal] = useState(false)
+  const [selectedEventForArchive, setSelectedEventForArchive] = useState<Event | null>(null)
+  const [showNotification, setShowNotification] = useState(false)
+  const [notificationMessage, setNotificationMessage] = useState('')
+  
+  // États pour l'édition d'événements
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [selectedEventForEdit, setSelectedEventForEdit] = useState<Event | null>(null)
+  const [showNewEventModal, setShowNewEventModal] = useState(false)
+  
+  // Écouter les synchronisations d'événements
+  // ⚠️ TEMPORAIREMENT DÉSACTIVÉ pour éviter les refresh infinis
+  /*
+  useEffect(() => {
+    console.log('🔄 CalendarPage - Configuration de l\'écoute des synchronisations')
+    
+    const unsubscribe = subscribeToEventChanges((updatedEvent) => {
+      console.log('📨 CalendarPage - Événement synchronisé reçu:', {
+        eventId: updatedEvent.id,
+        title: updatedEvent.title,
+        assignedFlorists: updatedEvent.assignedFlorists?.length || 0
+      })
+      
+      // Forcer le re-render pour refléter les changements
+      setSyncTrigger(prev => prev + 1)
+    })
+    
+    return unsubscribe
+  }, [subscribeToEventChanges])
+  */
+  
+  // Nouveau modal moderne pour événements
+  const [showModernEventModal, setShowModernEventModal] = useState(false)
+  const [selectedEventForModernModal, setSelectedEventForModernModal] = useState<Event | null>(null)
+  
+  // Liste des fleuristes disponibles
+  const availableFlorists = [
+    { id: 'f1', name: 'Marie Dubois', speciality: 'Mariages & Cérémonies', available: true },
+    { id: 'f2', name: 'Thomas Petit', speciality: 'Événements d\'entreprise', available: true },
+    { id: 'f3', name: 'Sophie Durand', speciality: 'Arrangements modernes', available: true },
+    { id: 'f4', name: 'Pierre Martin', speciality: 'Fleurs funéraires', available: false },
+    { id: 'f5', name: 'Julie Bernard', speciality: 'Compositions créatives', available: true }
+  ]
+
+  // Liste des clients (pour le modal)
+  const clientsData = [
+    { 
+      id: 'c1', 
+      firstName: 'Sophie', 
+      lastName: 'Pierre', 
+      email: 'sophie.pierre@email.com', 
+      phone: '06 12 34 56 78',
+      address: { street: '123 rue de la Paix', city: 'Paris', postalCode: '75001', country: 'France' }
+    },
+    { 
+      id: 'c2', 
+      firstName: 'Julie', 
+      lastName: 'Marc', 
+      email: 'julie.marc@email.com', 
+      phone: '06 23 45 67 89',
+      address: { street: '456 avenue des Champs', city: 'Lyon', postalCode: '69001', country: 'France' }
+    }
+  ]
+  
+  // Utiliser les événements du state global au lieu de données statiques
+  const events = state.events
+  
+  console.log('📅 CalendarPage - Événements depuis state global:', {
+    count: events.length,
+    source: 'AppContext'
+  })
+
+  // ✨ NOUVELLE FONCTION : Changer le statut d'un événement selon la logique métier
+  const changeEventStatus = (eventId: string, newStatus: EventStatus) => {
+    const event = events.find(e => e.id === eventId)
+    if (!event) return
+
+    console.log('🔄 Changement de statut demandé:', { eventId, newStatus, event: event.title })
+
+    // Vérifications selon la logique métier
+    if (newStatus === 'confirmed') {
+      // Pour passer en confirmé, il faut que tous les fleuristes soient assignés ET confirmés
+      const requiredFlorists = event.floristsRequired || 0
+      const confirmedFlorists = event.assignedFlorists?.filter(f => f.isConfirmed && f.status === 'confirmed').length || 0
+      
+      if (requiredFlorists > 0 && confirmedFlorists < requiredFlorists) {
+        showNotificationMessage(`❌ Impossible de confirmer : ${confirmedFlorists}/${requiredFlorists} fleuristes confirmés. Assignez d'abord tous les fleuristes nécessaires.`)
+        return
+      }
+    }
+
+    if (newStatus === 'in_progress') {
+      // Pour passer en cours, il faut au moins avoir assigné les fleuristes (même s'ils ne sont pas encore confirmés)
+      const requiredFlorists = event.floristsRequired || 0
+      const assignedFlorists = event.assignedFlorists?.length || 0
+      
+      if (requiredFlorists > 0 && assignedFlorists < requiredFlorists) {
+        showNotificationMessage(`❌ Impossible de passer en cours : ${assignedFlorists}/${requiredFlorists} fleuristes assignés. Assignez d'abord des fleuristes.`)
+        return
+      }
+    }
+
+    // Appliquer le changement via le contexte global
+    actions.updateEvent(eventId, { status: newStatus })
+    
+    // Message de confirmation
+    const statusLabels = {
+      'draft': 'brouillon',
+      'confirmed': 'confirmé',
+      'in_progress': 'en cours',
+      'completed': 'terminé',
+      'cancelled': 'annulé'
+    }
+    
+    showNotificationMessage(`✅ Événement "${event.title}" passé en ${statusLabels[newStatus]}`)
+  }
+
+  // ✨ FONCTION UTILITAIRE : Afficher les messages de notification
+  const showNotificationMessage = (message: string) => {
+    setNotificationMessage(message)
+    setShowNotification(true)
+    setTimeout(() => setShowNotification(false), 3000)
+  }
+
+  const confirmArchive = (isInvoiced: boolean, keepUntilPaid: boolean = false) => {
+    if (!selectedEventForArchive) return
+
+    if (!isInvoiced) {
+      // Pas encore facturé, garder dans les événements
+      setShowArchiveModal(false)
+      setSelectedEventForArchive(null)
+      showNotificationMessage("📋 Événement conservé en attente de facturation")
+      return
+    }
+
+    if (keepUntilPaid) {
+      // Garder jusqu'au paiement
+      setEvents(prevEvents => 
+        prevEvents.map(event => 
+          event.id === selectedEventForArchive.id 
+            ? { ...event, status: 'completed', isInvoiced: true }
+            : event
+        )
+      )
+      showNotificationMessage("💰 Événement marqué comme facturé, en attente de paiement")
+    } else {
+      // Archiver définitivement
+      setEvents(prevEvents => 
+        prevEvents.map(event => 
+          event.id === selectedEventForArchive.id 
+            ? { 
+                ...event, 
+                status: 'paid', 
+                isInvoiced: true, 
+                archiveDate: new Date().toISOString().split('T')[0],
+                color: 'bg-green-100 border-green-400'
+              }
+            : event
+        )
+      )
+      showNotificationMessage("💰😊 Événement archivé et marqué comme payé !")
+    }
+
+    setShowArchiveModal(false)
+    setSelectedEventForArchive(null)
+  }
+
+  const updateEventFlorist = (eventId: string, floristId: string | null, floristName: string | null) => {
+    setEvents(prevEvents => 
+      prevEvents.map(event => 
+        event.id === eventId 
+          ? { 
+              ...event, 
+              hasFlorist: floristId !== null,
+              floristName: floristName
+            }
+          : event
+      )
+    )
+    
+    const message = floristId 
+      ? `👨‍🌾 ${floristName} assigné(e) à l'événement !`
+      : "🚫 Fleuriste retiré de l'événement"
+    showNotificationMessage(message)
+  }
+
+  // Clients uniques extraits des événements
+  const clients = Array.from(new Set(events.map(e => ({ id: e.clientId, name: e.clientName, color: e.color }))))
+    .filter(c => c.id !== 'internal')
+    .map(c => ({
+      ...c,
+      eventsCount: events.filter(e => e.clientId === c.id).length
+    }))
+
+  // Vue Kanban avec drag & drop
+  const renderKanbanView = () => {
+    // ✨ CORRECTION : Utiliser le statut automatique pour les statistiques
+    const kanbanColumns = KANBAN_COLUMNS.map(column => ({
+      ...column,
+      count: events.filter(e => getActualEventStatus(e) === column.status).length
+    }))
+
+    return (
+      <div className="space-y-6">
+        {/* Récapitulatif */}
+        <div className="bg-white rounded-lg p-4 sm:p-6">
+          <h2 className="text-lg font-semibold text-gray-900 mb-6">
+            Récapitulatif des événements
+          </h2>
+          
+          <div className="grid grid-cols-2 gap-x-8 sm:gap-x-12 gap-y-6 sm:gap-y-8">
+            {KANBAN_COLUMNS.slice(0, 4).map((column, index) => {
+              // ✨ CORRECTION : Utiliser le statut automatique dans le récapitulatif
+              const count = events.filter(e => getActualEventStatus(e) === column.status).length
+              const IconComponent = index === 0 ? Clock : index === 1 ? CheckCircle : index === 2 ? AlertCircle : CheckCircle
+              
+              return (
+                <div key={column.id} className="flex items-center space-x-3 sm:space-x-4">
+                  <div className={`w-10 h-10 sm:w-12 sm:h-12 ${column.headerColor} rounded-full flex items-center justify-center`}>
+                    <IconComponent className={`w-5 h-5 sm:w-6 sm:h-6 ${column.iconColor}`} />
+                  </div>
+                  <div>
+                    <div className="text-xs text-gray-500 mb-1">{column.title}</div>
+                    <div className="text-xl sm:text-2xl font-bold text-gray-900">
+                      {count}
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* Kanban Board */}
+        <div className="bg-white rounded-lg p-4 sm:p-6">
+          <div className="mb-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-3">
+              Tableau Kanban - Gestion par Assignation de Fleuristes
+            </h2>
+            
+            {/* ✨ PANNEAU D'EXPLICATION DE LA LOGIQUE MÉTIER */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+              <div className="flex items-start space-x-3">
+                <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <span className="text-white text-xs font-bold">!</span>
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-sm font-semibold text-blue-900 mb-2">
+                    🎯 Logique automatique du statut selon les fleuristes
+                  </h3>
+                  <ul className="text-xs text-blue-800 space-y-1">
+                    <li><strong>📝 À Planifier :</strong> Fleuristes manquants</li>
+                    <li><strong>✅ Confirmé :</strong> Tous les fleuristes confirmés (pas aujourd'hui)</li>
+                    <li><strong>⚡ En Cours :</strong> Événement EN COURS aujourd'hui</li>
+                    <li><strong>🎉 Terminé :</strong> Événement accompli, prêt à facturer</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {kanbanColumns.map(column => {
+              // ✨ CORRECTION : Utiliser le statut automatique au lieu du statut stocké
+              const columnEvents = events.filter(e => getActualEventStatus(e) === column.status)
+              const Icon = column.icon
+              
+              return (
+                <div
+                  key={column.id}
+                  className={`${column.bgColor} rounded-xl p-4 min-h-[600px] border-2 border-gray-200`}
+                >
+                  <div className={`${column.headerColor} rounded-lg p-3 mb-4 flex items-center justify-between`}>
+                    <div className="flex items-center space-x-2">
+                      <Icon className={`w-5 h-5 ${column.iconColor}`} />
+                      <h3 className="font-semibold text-gray-900">{column.title}</h3>
+                    </div>
+                    <span className="bg-white text-gray-700 text-sm px-2 py-1 rounded-full font-medium">
+                      {columnEvents.length}
+                    </span>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    {columnEvents.map(event => (
+                      <div
+                        key={event.id}
+                        className={`${getClientColor(event.clientId)} rounded-2xl p-5 border-l-4 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] bg-gradient-to-br from-white to-gray-50`}
+                      >
+                        {/* 🎯 HEADER ÉLÉGANT */}
+                        <div className="flex items-start justify-between mb-4">
+                          <div className="flex-1">
+                            <h4 className="font-bold text-gray-900 text-lg leading-tight mb-1">
+                              {event.title}
+                            </h4>
+                            <div className="flex items-center space-x-2">
+                              <span className="text-sm text-gray-600 font-medium">
+                                👤 {getClientName(event.clientId)}
+                              </span>
+                              <span className="w-1 h-1 bg-gray-400 rounded-full"></span>
+                              <span className="text-sm text-gray-600">
+                                📍 {event.location}
+                              </span>
+                            </div>
+                          </div>
+                          
+                          {/* Actions compactes */}
+                          <div className="flex items-center space-x-1 ml-3">
+                            {event.status === 'completed' && (
+                              <button
+                                onClick={() => handleArchiveEvent(event)}
+                                className="w-8 h-8 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg transition-colors duration-200 flex items-center justify-center"
+                                title="Archiver"
+                              >
+                                <Archive className="w-4 h-4" />
+                              </button>
+                            )}
+                            <button
+                              onClick={() => {
+                                setSelectedEventForModernModal(event)
+                                setShowModernEventModal(true)
+                              }}
+                              className="w-8 h-8 bg-blue-100 hover:bg-blue-200 text-blue-600 rounded-lg transition-colors duration-200 flex items-center justify-center"
+                              title="Modifier"
+                            >
+                              <Edit className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                        
+                        {/* 📊 MÉTRIQUES PRINCIPALES */}
+                        <div className="grid grid-cols-3 gap-3 mb-4">
+                          {/* Date */}
+                          <div className="text-center">
+                            <div className="text-xs text-gray-500 font-medium mb-1">Date</div>
+                            <div className="text-sm font-bold text-gray-900">
+                              {new Date(event.date).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })}
+                            </div>
+                          </div>
+                          
+                          {/* Heure */}
+                          <div className="text-center">
+                            <div className="text-xs text-gray-500 font-medium mb-1">Heure</div>
+                            <div className="text-sm font-bold text-blue-600">
+                              {event.time}
+                            </div>
+                          </div>
+                          
+                          {/* Budget */}
+                          <div className="text-center">
+                            <div className="text-xs text-gray-500 font-medium mb-1">Gain</div>
+                            <div className="text-sm font-bold text-green-600">
+                              {event.budget.toLocaleString('fr-FR')}€
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {/* 👥 FLEURISTES STATUS - ÉLÉGANT */}
+                        {event.floristsRequired && event.floristsRequired > 0 ? (
+                          <div className="bg-white/70 backdrop-blur-sm p-3 rounded-xl border border-gray-200/50">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center space-x-2">
+                                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                                <span className="text-sm font-medium text-gray-700">
+                                  Équipe {event.assignedFlorists?.length || 0}/{event.floristsRequired}
+                                </span>
+                              </div>
+                              
+                              {/* Badge status */}
+                              {(event.assignedFlorists?.length || 0) < event.floristsRequired ? (
+                                <div className="flex items-center space-x-1 px-2 py-1 rounded-full bg-red-50 border border-red-200">
+                                  <span className="text-xs font-bold text-red-700">
+                                    ❗ -{event.floristsRequired - (event.assignedFlorists?.length || 0)}
+                                  </span>
+                                </div>
+                              ) : (
+                                <div className="flex items-center space-x-1 px-2 py-1 rounded-full bg-green-50 border border-green-200">
+                                  <span className="text-xs font-bold text-green-700">
+                                    ✓ Complet
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="bg-red-50/70 backdrop-blur-sm p-3 rounded-xl border border-red-200/50">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center space-x-2">
+                                <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                                <span className="text-sm font-medium text-red-700">
+                                  Équipe 0/{event.floristsRequired || 0}
+                                </span>
+                              </div>
+                              <div className="px-2 py-1 rounded-full bg-red-100 border border-red-300">
+                                <span className="text-xs font-bold text-red-800">
+                                  ❗ -{event.floristsRequired || 0}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* 🤖 STATUT AUTOMATIQUE - VERSION CLASSY */}
+                        <div className="mt-4 flex items-center justify-between">
+                          <div className="flex items-center space-x-2">
+                            <div className="w-1.5 h-1.5 bg-gray-400 rounded-full"></div>
+                            <span className="text-xs text-gray-500 font-medium">Statut auto</span>
+                          </div>
+                          
+                          <div className={`px-3 py-1.5 rounded-full text-xs font-medium border ${
+                            getActualEventStatus(event) === 'draft' ? 'bg-gray-50 text-gray-700 border-gray-200' :
+                            getActualEventStatus(event) === 'confirmed' ? 'bg-yellow-50 text-yellow-700 border-yellow-200' :
+                            getActualEventStatus(event) === 'in_progress' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                            getActualEventStatus(event) === 'completed' ? 'bg-green-50 text-green-700 border-green-200' :
+                            'bg-gray-50 text-gray-700 border-gray-200'
+                          }`}>
+                            {getActualEventStatus(event) === 'draft' ? '📝 À Planifier' :
+                             getActualEventStatus(event) === 'confirmed' ? '✅ Confirmé' :
+                             getActualEventStatus(event) === 'in_progress' ? '⚡ En cours' :
+                             getActualEventStatus(event) === 'completed' ? '🎉 Terminé' :
+                             'État inconnu'}
+                          </div>
+                        </div>
+                        
+                        {getActualEventStatus(event) === 'paid' && (
+                          <div className="mt-3 p-2 bg-green-100 rounded-lg border border-green-300 flex items-center justify-center space-x-2">
+                            <DollarSign className="w-4 h-4 text-green-600" />
+                            <span className="text-green-800 font-bold text-sm">PAYÉ</span>
+                            <Smile className="w-4 h-4 text-yellow-500" />
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      </div>
+    )
+  }  // Vue Calendrier avec événements visuels
+  const renderCalendarView = () => {
+    // Génération du calendrier juillet 2025
+    const daysInMonth = 31
+    const firstDay = new Date(2025, 6, 1).getDay() // 0 = dimanche
+    const days = []
+    
+    // Jours vides en début de mois
+    for (let i = 0; i < firstDay; i++) {
+      days.push(null)
+    }
+    
+    // Jours du mois
+    for (let day = 1; day <= daysInMonth; day++) {
+      days.push(day)
+    }
+    
+  // Utilitaires calendrier dynamique
+  const getDaysInMonth = (date: Date) => {
+    return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate()
+  }
+  
+  const getFirstDayOfMonth = (date: Date) => {
+    const firstDay = new Date(date.getFullYear(), date.getMonth(), 1).getDay()
+    return firstDay === 0 ? 6 : firstDay - 1 // Lundi = 0, Dimanche = 6
+  }
+  
+  const formatMonthYear = (date: Date) => {
+    return date.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })
+  }
+  
+  const navigateMonth = (direction: 'prev' | 'next') => {
+    setCurrentDate(prev => {
+      const newDate = new Date(prev)
+      if (direction === 'prev') {
+        newDate.setMonth(prev.getMonth() - 1)
+      } else {
+        newDate.setMonth(prev.getMonth() + 1)
+      }
+      return newDate
+    })
+  }
+
+  // ✨ FONCTION SIMPLE ET ROBUSTE : Événements par jour avec support multi-jours
+  const getEventsForDay = (day: number) => {
+    const year = currentDate.getFullYear()
+    const month = currentDate.getMonth() // 0-based (0 = janvier)
+    
+    console.log(`📅 Recherche événements pour: ${day}/${month + 1}/${year}`)
+    
+    const foundEvents = events.filter(event => {
+      // Date de début de l'événement
+      const startDate = new Date(event.date)
+      
+      // Date de fin (si elle existe, sinon même jour que le début)
+      const endDate = event.endDate ? new Date(event.endDate) : new Date(event.date)
+      
+      // Date ciblée (le jour qu'on vérifie dans le calendrier)
+      const targetDate = new Date(year, month, day)
+      
+      // Normaliser toutes les dates à minuit pour comparaison propre
+      const start = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate())
+      const end = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate())
+      const target = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate())
+      
+      const isInRange = target >= start && target <= end
+      
+      console.log(`🔍 ${event.title}:`, {
+        start: `${start.getDate()}/${start.getMonth() + 1}/${start.getFullYear()}`,
+        end: `${end.getDate()}/${end.getMonth() + 1}/${end.getFullYear()}`,
+        target: `${target.getDate()}/${target.getMonth() + 1}/${target.getFullYear()}`,
+        inRange: isInRange
+      })
+      
+      return isInRange
+    })
+    
+    console.log(`✅ Trouvé ${foundEvents.length} événement(s) pour le ${day}/${month + 1}`)
+    return foundEvents
+  }
+    
+    console.log(`📅 Événements trouvés pour ${dateStr}:`, foundEvents.length, foundEvents)
+    return foundEvents
+  }
+    
+    return (
+      <div className="space-y-6">
+        {/* Calendrier principal */}
+        <div className="bg-white rounded-lg p-4 sm:p-6">
+          {/* Header navigation */}
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center space-x-4">
+              <button 
+                onClick={() => navigateMonth('prev')}
+                className="p-2 rounded-lg text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+              
+              <h2 className="text-xl font-semibold text-gray-900 capitalize">
+                {formatMonthYear(currentDate)}
+              </h2>
+              
+              <button 
+                onClick={() => navigateMonth('next')}
+                className="p-2 rounded-lg text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            </div>
+            
+            {/* Bouton retour aujourd'hui */}
+            <button 
+              onClick={() => setCurrentDate(new Date())}
+              className="px-3 py-1 text-sm bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors"
+            >
+              Aujourd'hui
+            </button>
+          </div>
+          
+          {/* Grille calendrier dynamique */}
+          <div className="grid grid-cols-7 gap-1 sm:gap-2">
+            {/* En-têtes des jours */}
+            {['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'].map(day => (
+              <div key={day} className="h-8 flex items-center justify-center">
+                <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">{day}</span>
+              </div>
+            ))}
+            
+            {/* Cases vides pour aligner le premier jour */}
+            {Array.from({ length: getFirstDayOfMonth(currentDate) }).map((_, index) => (
+              <div key={`empty-${index}`} className="h-20 border border-gray-200 bg-gray-50"></div>
+            ))}
+            
+            {/* Jours du mois */}
+            {Array.from({ length: getDaysInMonth(currentDate) }).map((_, index) => {
+              const day = index + 1
+              const year = currentDate.getFullYear()
+              const month = (currentDate.getMonth() + 1).toString().padStart(2, '0')
+              const dayStr = day.toString().padStart(2, '0')
+              const dateStr = `${year}-${month}-${dayStr}`
+              const dayEvents = events.filter(e => {
+                // Gestion robuste des différents formats de date
+                let eventDateStr = ''
+                if (e.date instanceof Date) {
+                  eventDateStr = e.date.toISOString().split('T')[0]
+                } else if (typeof e.date === 'string') {
+                  eventDateStr = e.date
+                } else {
+                  // Si c'est autre chose, on essaie de créer une Date
+                  try {
+                    eventDateStr = new Date(e.date).toISOString().split('T')[0]
+                  } catch {
+                    return false
+                  }
+                }
+                return eventDateStr === dateStr
+              })
+              
+              const isToday = new Date().toDateString() === new Date(year, currentDate.getMonth(), day).toDateString()
+              const cellHeight = 'h-20'
+              
+              return (
+                <div 
+                  key={day}
+                  className={`${cellHeight} border border-gray-200 cursor-pointer hover:bg-gray-50 transition-all duration-200 rounded relative overflow-hidden ${
+                    isToday ? 'bg-blue-50 border-blue-300' : ''
+                  }`}
+                  onClick={() => setSelectedDay(dateStr)}
+                >
+                  <div className={`text-sm font-medium absolute top-1 left-1 z-10 ${
+                    isToday ? 'text-blue-700' : 'text-gray-900'
+                  }`}>
+                    {day}
+                  </div>
+                  
+                  {/* Barres de couleurs pour les événements - UNE COULEUR PAR CLIENT */}
+                  <div className="flex flex-col justify-center mt-6 px-2 space-y-1">
+                    {dayEvents.slice(0, 4).map((event, idx) => {
+                      // UTILISER LA COULEUR DU CLIENT au lieu du statut
+                      const clientColor = getClientColor(event.clientId)
+                      const actualStatus = getActualEventStatus(event)
+                      
+                      const floristsInfo = event.floristsRequired ? 
+                        `${event.assignedFlorists?.length || 0}/${event.floristsRequired} fleuristes` : 
+                        'Pas de fleuristes requis'
+                      
+                      return (
+                        <div 
+                          key={idx} 
+                          className={`h-1 ${clientColor} rounded-full transition-all duration-200 hover:h-1.5 ${
+                            event.endDate && event.endDate !== event.date ? 'opacity-75' : ''
+                          }`}
+                          title={`${event.title} - ${getClientName(event.clientId)} - ${floristsInfo} - Statut: ${actualStatus}${
+                            event.endDate && event.endDate !== event.date ? ' (Multi-jours)' : ''
+                          }`}
+                        />
+                      )
+                    })}
+                    
+                    {/* Indicateur s'il y a plus d'événements */}
+                    {dayEvents.length > 4 && (
+                      <div className="text-xs text-gray-500 font-medium text-center">
+                        +{dayEvents.length - 4}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+        
+        {/* TOUS les clients avec leurs stats du mois */}
+        <div className="bg-white rounded-lg p-4 sm:p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">
+            🏢 Tous les Clients - Stats {formatMonthYear(currentDate)}
+          </h3>
+          
+          {/* Fonction pour récupérer TOUS les clients avec leurs stats du mois */}
+          {(() => {
+            // Calculer le mois courant
+            const currentYear = currentDate.getFullYear()
+            const currentMonth = currentDate.getMonth()
+            const startOfMonth = new Date(currentYear, currentMonth, 1)
+            const endOfMonth = new Date(currentYear, currentMonth + 1, 0)
+            
+            // Filtrer les événements du mois
+            const monthEvents = events.filter(event => {
+              const eventDate = event.date instanceof Date ? event.date : new Date(event.date)
+              return eventDate >= startOfMonth && eventDate <= endOfMonth
+            })
+            
+            // Prendre TOUS les clients et calculer leurs stats pour ce mois
+            const allClientsWithStats = state.clients.map(client => {
+              const clientEvents = monthEvents.filter(e => e.clientId === client.id)
+              return {
+                id: client.id,
+                name: `${client.firstName} ${client.lastName}`,
+                eventsCount: clientEvents.length,
+                totalBudget: clientEvents.reduce((sum, e) => sum + e.budget, 0),
+                email: client.email,
+                phone: client.phone
+              }
+            }).sort((a, b) => {
+              // Trier par nombre d'événements (plus actifs en premier)
+              if (b.eventsCount !== a.eventsCount) {
+                return b.eventsCount - a.eventsCount
+              }
+              // Puis par budget
+              if (b.totalBudget !== a.totalBudget) {
+                return b.totalBudget - a.totalBudget
+              }
+              // Puis par nom
+              return a.name.localeCompare(b.name)
+            })
+            
+            return allClientsWithStats.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                {allClientsWithStats.map((client, index) => {
+                  // Couleurs différentes selon l'activité
+                  const getColorClass = () => {
+                    if (client.eventsCount === 0) {
+                      return 'bg-gray-100 border-gray-300 text-gray-700' // Pas d'événements
+                    } else if (client.eventsCount >= 10) {
+                      return 'bg-green-100 border-green-400 text-green-800' // Très actif
+                    } else if (client.eventsCount >= 5) {
+                      return 'bg-blue-100 border-blue-400 text-blue-800' // Actif
+                    } else if (client.eventsCount >= 2) {
+                      return 'bg-orange-100 border-orange-400 text-orange-800' // Modéré
+                    } else {
+                      return 'bg-yellow-100 border-yellow-400 text-yellow-800' // Peu actif
+                    }
+                  }
+                  
+                  return (
+                    <div 
+                      key={client.id}
+                      className={`p-3 rounded-lg border-2 cursor-pointer hover:scale-105 transition-all duration-200 ${getColorClass()}`}
+                      onClick={() => setSelectedClient(client.id)}
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <h4 className="font-semibold text-sm">{client.name}</h4>
+                        <span className="text-xs font-bold">
+                          {client.eventsCount} événement{client.eventsCount > 1 ? 's' : ''}
+                        </span>
+                      </div>
+                      <div className="text-xs font-medium">
+                        💰 {client.totalBudget.toLocaleString()}€
+                        {client.eventsCount === 0 && (
+                          <div className="text-xs text-gray-500 mt-1">Aucun événement ce mois</div>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            ) : (
+              <div className="text-center text-gray-500 py-4">
+                <User className="w-12 h-12 mx-auto mb-2 text-gray-300" />
+                <p>Aucun client enregistré</p>
+              </div>
+            )
+          })()}
+        </div>
+      </div>
+    )
+  }
+  
+  // FONCTION COULEUR PAR CLIENT (au lieu de couleur par statut)
+  const getClientColor = (clientId: string) => {
+    // Couleurs assignées selon l'ID client pour cohérence
+    const clientColors = {
+      '1': 'bg-blue-300',      // Sophie Martin = Bleu
+      '2': 'bg-green-300',     // Julie Petit = Vert  
+      '3': 'bg-purple-300',    // Marie Leclerc = Violet
+      '4': 'bg-orange-300',    // Pierre Dubois = Orange
+      '5': 'bg-pink-300',      // Marc Dubois = Rose
+      // Couleurs de fallback pour nouveaux clients (palette étendue)
+      'default': ['bg-yellow-300', 'bg-teal-300', 'bg-red-300', 'bg-indigo-300', 'bg-cyan-300', 'bg-emerald-300', 'bg-rose-300', 'bg-violet-300', 'bg-amber-300', 'bg-lime-300']
+    }
+    
+    // Si ID spécifique trouvé, l'utiliser
+    if (clientColors[clientId]) {
+      return clientColors[clientId]
+    }
+    
+    // Sinon, utiliser un algorithme pour générer une couleur consistante
+    const hash = clientId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0)
+    const colorIndex = hash % clientColors.default.length
+    return clientColors.default[colorIndex]
+  }
+
+  // Fonction pour récupérer le nom du client
+  const getClientName = (clientId: string) => {
+    const client = state.clients.find(c => c.id === clientId)
+    return client ? `${client.firstName} ${client.lastName}` : 'Client inconnu'
+  }
+
+  // FONCTION PRINCIPALE : Calcul automatique du statut selon les fleuristes ET la date
+  const getActualEventStatus = (event: Event) => {
+    // Si l'événement est terminé ou annulé, garder le statut original
+    if (event.status === 'completed' || event.status === 'cancelled') {
+      return event.status
+    }
+    
+    // Calculer le nombre de fleuristes assignés et confirmés
+    const assignedCount = event.assignedFlorists?.length || 0
+    const confirmedCount = event.assignedFlorists?.filter(f => f.isConfirmed && f.status === 'confirmed').length || 0
+    const requiredCount = event.floristsRequired || 0
+    
+    // Vérifier si c'est aujourd'hui
+    const today = new Date()
+    const eventDate = new Date(event.date)
+    const isToday = today.toDateString() === eventDate.toDateString()
+    
+    // NOUVELLE LOGIQUE AUTOMATIQUE :
+    
+    // 1. EN COURS = Événement AUJOURD'HUI avec tous les fleuristes confirmés
+    if (isToday && confirmedCount >= requiredCount && requiredCount > 0) {
+      return 'in_progress'
+    }
+    
+    // 2. CONFIRMÉ = Tous les fleuristes confirmés mais pas aujourd'hui
+    if (confirmedCount >= requiredCount && requiredCount > 0) {
+      return 'confirmed'
+    }
+    
+    // 3. BROUILLON = Pas assez de fleuristes (ou pas de fleuristes requis)
+    return 'draft'
+  }
+
+  // Fonction pour calculer l'urgence des événements (mise à jour avec statut automatique)
+  const calculateEventUrgency = (event: Event) => {
+    const now = new Date()
+    const eventDate = new Date(event.date)
+    const daysUntilEvent = Math.ceil((eventDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+    
+    // UTILISER LE STATUT AUTOMATIQUE au lieu du statut stocké
+    const actualStatus = getActualEventStatus(event)
+    
+    // Règles d'urgence selon notre hiérarchie
+    if (actualStatus === 'cancelled') return { level: 0, label: 'Annulé', color: 'gray', priority: 'none', emoji: '❌' }
+    if (actualStatus === 'completed') return { level: 1, label: 'Terminé', color: 'green', priority: 'archive', emoji: '🎉' }
+    
+    // Événements passés non terminés = CRITIQUE
+    if (daysUntilEvent < 0 && actualStatus !== 'completed') {
+      return { level: 5, label: 'EN RETARD', color: 'red', priority: 'critical', emoji: '🚨' }
+    }
+    
+    // Événements aujourd'hui
+    if (daysUntilEvent === 0) {
+      if (actualStatus === 'draft') return { level: 5, label: 'AUJOURD\'HUI - FLEURISTES MANQUANTS', color: 'red', priority: 'critical', emoji: '🚨' }
+      if (actualStatus === 'in_progress') return { level: 4, label: 'AUJOURD\'HUI - FLEURISTES À CONFIRMER', color: 'orange', priority: 'high', emoji: '🔥' }
+      if (actualStatus === 'confirmed') return { level: 3, label: 'AUJOURD\'HUI - CONFIRMÉ', color: 'blue', priority: 'medium', emoji: '⚡' }
+    }
+    
+    // Événements demain
+    if (daysUntilEvent === 1) {
+      if (actualStatus === 'draft') return { level: 4, label: 'DEMAIN - FLEURISTES MANQUANTS', color: 'orange', priority: 'high', emoji: '🔥' }
+      if (actualStatus === 'in_progress') return { level: 3, label: 'DEMAIN - FLEURISTES À CONFIRMER', color: 'yellow', priority: 'medium', emoji: '⚡' }
+      if (actualStatus === 'confirmed') return { level: 2, label: 'DEMAIN - CONFIRMÉ', color: 'blue', priority: 'low', emoji: '📋' }
+    }
+    
+    // Événements cette semaine (2-7 jours)
+    if (daysUntilEvent >= 2 && daysUntilEvent <= 7) {
+      if (actualStatus === 'draft') return { level: 3, label: 'CETTE SEMAINE - FLEURISTES MANQUANTS', color: 'yellow', priority: 'medium', emoji: '⚡' }
+      if (actualStatus === 'in_progress') return { level: 2, label: 'CETTE SEMAINE - FLEURISTES À CONFIRMER', color: 'blue', priority: 'low', emoji: '📋' }
+      if (actualStatus === 'confirmed') return { level: 1, label: 'CETTE SEMAINE - CONFIRMÉ', color: 'green', priority: 'planning', emoji: '📅' }
+    }
+    
+    // Événements futurs (> 7 jours)
+    if (daysUntilEvent > 7) {
+      if (actualStatus === 'draft') return { level: 2, label: 'FUTUR - FLEURISTES MANQUANTS', color: 'gray', priority: 'low', emoji: '📋' }
+      if (actualStatus === 'in_progress') return { level: 1, label: 'FUTUR - FLEURISTES À CONFIRMER', color: 'yellow', priority: 'planning', emoji: '📅' }
+      if (actualStatus === 'confirmed') return { level: 1, label: 'FUTUR - CONFIRMÉ', color: 'green', priority: 'planning', emoji: '📅' }
+    }
+    
+    return { level: 1, label: 'À VÉRIFIER', color: 'gray', priority: 'low', emoji: '📋' }
+  }
+
+  // Popup événements du jour - VERSION HIÉRARCHIE D'URGENCE
+  const renderDayPopup = () => {
+    if (!selectedDay) return null
+    
+    // Utiliser la fonction getEventsForDay corrigée au lieu du filter direct
+    const date = new Date(selectedDay)
+    const dayEvents = events.filter(e => {
+      // Gestion robuste des différents formats de date
+      let eventDateStr = ''
+      if (e.date instanceof Date) {
+        eventDateStr = e.date.toISOString().split('T')[0]
+      } else if (typeof e.date === 'string') {
+        eventDateStr = e.date
+      } else {
+        // Si c'est autre chose, on essaie de créer une Date
+        try {
+          eventDateStr = new Date(e.date).toISOString().split('T')[0]
+        } catch {
+          return false
+        }
+      }
+      return eventDateStr === selectedDay
+    })
+    
+    const formattedDate = date.toLocaleDateString('fr-FR', { 
+      weekday: 'long', 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    })
+    
+    // Ajouter urgence et trier par priorité SEULEMENT s'il y a des événements
+    const eventsWithUrgency = dayEvents.length > 0 ? dayEvents.map(event => ({
+      ...event,
+      urgency: calculateEventUrgency(event)
+    })).sort((a, b) => {
+      // Trier par niveau d'urgence décroissant, puis par heure
+      if (b.urgency.level !== a.urgency.level) {
+        return b.urgency.level - a.urgency.level
+      }
+      return a.time.localeCompare(b.time)
+    }) : []
+
+    // Calculer les stats du jour
+    const totalBudget = dayEvents.reduce((sum, event) => sum + event.budget, 0)
+    const criticalEvents = eventsWithUrgency.filter(e => e.urgency?.level >= 4).length
+    const facturationEvents = dayEvents.filter(e => e.status === 'completed' && !e.isInvoiced).length
+    
+    return (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+        <div className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] shadow-2xl overflow-hidden">
+          {/* Header standardisé comme le 7 juillet */}
+          <div className={`p-6 border-b border-gray-100 relative ${
+            criticalEvents > 0 
+              ? 'bg-gradient-to-r from-red-50 to-orange-50' 
+              : 'bg-white'
+          }`}>
+            {/* Badge urgence en haut */}
+            {criticalEvents > 0 && (
+              <div className="absolute top-3 left-6">
+                <span className="bg-red-500 text-white px-2 py-1 rounded-full text-xs font-medium flex items-center space-x-1">
+                  <span>🚨</span>
+                  <span>{criticalEvents} urgent{criticalEvents > 1 ? 's' : ''}</span>
+                </span>
+              </div>
+            )}
+            
+            {/* Bouton fermer */}
+            <button 
+              onClick={() => setSelectedDay(null)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 p-1"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            
+            {/* Titre et infos principales */}
+            <div className="pt-8">
+              <h2 className="text-xl font-bold text-gray-900">{formattedDate}</h2>
+              <div className="flex items-center justify-between mt-2">
+                <p className="text-sm text-gray-600">
+                  {dayEvents.length} événement{dayEvents.length > 1 ? 's' : ''}
+                </p>
+                <div className="flex items-center space-x-1">
+                  <DollarSign className="w-4 h-4 text-green-500" />
+                  <span className="font-bold text-green-600">{totalBudget.toLocaleString()}€</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          {/* Liste des événements avec hiérarchie d'urgence */}
+          <div className="overflow-y-auto max-h-[60vh]">
+            {dayEvents.length === 0 ? (
+              <div className="p-6 text-center text-gray-500">
+                <CalendarIcon className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                <p className="text-lg font-medium">Aucun événement</p>
+                <p className="text-sm">Cette journée est libre</p>
+                <p className="text-xs text-gray-400 mt-2">Cliquez sur "Nouvel Événement" pour planifier</p>
+              </div>
+            ) : (
+              <div className="p-4 space-y-3">
+                {eventsWithUrgency.map((event) => {
+                  const urgency = event.urgency
+                  const kanbanColumn = getKanbanColumn(event.status)
+                  
+                  // Définir les couleurs selon priorité : Urgence > Statut automatique Kanban
+                  const getCardColors = () => {
+                    // Si événement critique ou urgent, priorité à l'urgence
+                    if (urgency.level >= 4) {
+                      return urgency.color === 'red' 
+                        ? 'border-red-300 bg-red-50' 
+                        : 'border-orange-300 bg-orange-50'
+                    }
+                    
+                    // UTILISER LE STATUT AUTOMATIQUE basé sur les fleuristes
+                    const actualStatus = getActualEventStatus(event)
+                    switch (actualStatus) {
+                      case 'draft':
+                        return 'border-gray-300 bg-gray-50' // Gris = Fleuristes manquants
+                      case 'confirmed':
+                        return 'border-green-300 bg-green-50' // Vert = Fleuristes confirmés complets
+                      case 'in_progress':
+                        return 'border-yellow-300 bg-yellow-50' // Jaune = Fleuristes à confirmer
+                      case 'completed':
+                        return 'border-blue-300 bg-blue-50' // Bleu = Terminé
+                      case 'cancelled':
+                        return 'border-red-300 bg-red-50' // Rouge = Annulé
+                      default:
+                        return 'border-gray-300 bg-gray-50'
+                    }
+                  }
+                  
+                  return (
+                    <div 
+                      key={event.id}
+                      className={`rounded-xl p-4 border-2 cursor-pointer transition-all hover:scale-[1.02] ${getCardColors()}`}
+                      onClick={() => {
+                        setSelectedEventForModernModal(event)
+                        setShowModernEventModal(true)
+                      }}
+                    >
+                      {/* Header événement avec urgence */}
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex items-center space-x-2 flex-1">
+                          <span className="text-lg">{urgency.emoji}</span>
+                          <div className="flex-1">
+                            <h3 className="font-bold text-gray-900 text-lg leading-tight">
+                              {event.title}
+                            </h3>
+                            <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium mt-1 ${
+                              // Si événement critique/urgent, utiliser couleur d'urgence
+                              urgency.level >= 4 ? (
+                                urgency.color === 'red' ? 'bg-red-100 text-red-800' : 'bg-orange-100 text-orange-800'
+                              ) : (
+                                // UTILISER LE STATUT AUTOMATIQUE pour les couleurs Kanban
+                                (() => {
+                                  const actualStatus = getActualEventStatus(event)
+                                  return actualStatus === 'draft' ? 'bg-gray-100 text-gray-800' :
+                                         actualStatus === 'confirmed' ? 'bg-green-100 text-green-800' :
+                                         actualStatus === 'in_progress' ? 'bg-yellow-100 text-yellow-800' :
+                                         actualStatus === 'completed' ? 'bg-blue-100 text-blue-800' :
+                                         actualStatus === 'cancelled' ? 'bg-red-100 text-red-800' :
+                                         'bg-gray-100 text-gray-800'
+                                })()
+                              )
+                            }`}>
+                              {/* Afficher le label d'urgence pour les critiques, sinon statut intelligent */}
+                              {urgency.level >= 4 ? urgency.label : (() => {
+                                const actualStatus = getActualEventStatus(event)
+                                const assignedCount = event.assignedFlorists?.length || 0
+                                const requiredCount = event.floristsRequired || 0
+                                
+                                if (actualStatus === 'confirmed') return `✅ Confirmé (${assignedCount}/${requiredCount})`
+                                if (actualStatus === 'in_progress') return `⚠️ En cours (${assignedCount}/${requiredCount})`
+                                if (actualStatus === 'draft') return `❌ Fleuristes manquants (${assignedCount}/${requiredCount})`
+                                if (actualStatus === 'completed') return '🎉 Terminé'
+                                if (actualStatus === 'cancelled') return '❌ Annulé'
+                                return kanbanColumn.title
+                              })()}
+                            </span>
+                          </div>
+                        </div>
+                        
+                        <div className="text-right">
+                          <div className="text-lg font-bold text-green-600">
+                            {event.budget.toLocaleString()}€
+                          </div>
+                          {event.status === 'completed' && !event.isInvoiced && (
+                            <span className="text-xs px-2 py-1 bg-orange-100 text-orange-800 rounded-full font-medium">
+                              À facturer
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      
+                      {/* Informations détaillées */}
+                      <div className="space-y-3 text-sm text-gray-700">
+                        {/* Informations Client - En priorité */}
+                        <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
+                          <div className="flex items-center space-x-2">
+                            <User className="w-5 h-5 text-blue-600" />
+                            <span className="font-semibold text-blue-800">Client :</span>
+                            <span className="font-bold text-blue-900">{getClientName(event.clientId)}</span>
+                          </div>
+                        </div>
+
+                        {/* Informations Dates & Horaires - En priorité */}
+                        <div className="bg-purple-50 p-3 rounded-lg border border-purple-200">
+                          <div className="space-y-2">
+                            <div className="flex items-center space-x-2">
+                              <CalendarIcon className="w-5 h-5 text-purple-600" />
+                              <span className="font-semibold text-purple-800">Date :</span>
+                              <span className="font-bold text-purple-900">
+                                {new Date(event.date).toLocaleDateString('fr-FR', { 
+                                  weekday: 'long', 
+                                  day: '2-digit', 
+                                  month: 'long', 
+                                  year: 'numeric' 
+                                })}
+                                {event.endDate && event.endDate !== event.date && (
+                                  <span> → {new Date(event.endDate).toLocaleDateString('fr-FR', { 
+                                    weekday: 'long', 
+                                    day: '2-digit', 
+                                    month: 'long' 
+                                  })}</span>
+                                )}
+                              </span>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <Clock className="w-5 h-5 text-purple-600" />
+                              <span className="font-semibold text-purple-800">Horaires :</span>
+                              <span className="font-bold text-purple-900">
+                                {event.time}
+                                {event.endTime && event.endTime !== event.time && (
+                                  <span> → {event.endTime}</span>
+                                )}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {/* Lieu */}
+                        <div className="flex items-center space-x-2">
+                          <MapPin className="w-4 h-4 text-green-500" />
+                          <span className="font-medium">Lieu :</span>
+                          <span>{event.location}</span>
+                        </div>
+                        
+                        {/* Informations fleuristes */}
+                        {event.floristsRequired && (
+                          <div className="bg-white rounded-lg p-3 border border-gray-200">
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="text-sm font-medium text-gray-700">
+                                👥 Fleuristes requis: {event.assignedFlorists?.length || 0}/{event.floristsRequired}
+                              </span>
+                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                (event.assignedFlorists?.length || 0) >= event.floristsRequired 
+                                  ? 'bg-green-100 text-green-800' 
+                                  : 'bg-orange-100 text-orange-800'
+                              }`}>
+                                {(event.assignedFlorists?.length || 0) >= event.floristsRequired ? '✅ Complet' : '⚠️ Manque'}
+                              </span>
+                            </div>
+                            
+                            {/* Liste des fleuristes assignés */}
+                            {event.assignedFlorists && event.assignedFlorists.length > 0 && (
+                              <div className="space-y-2">
+                                {event.assignedFlorists.map((florist, index) => (
+                                  <div key={index} className="flex items-center justify-between bg-gray-50 rounded-lg p-2">
+                                    <div className="flex items-center space-x-2">
+                                      <div className="w-6 h-6 bg-teal-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
+                                        {(florist.name || florist.floristName || 'FL').split(' ').map(n => n[0]).join('')}
+                                      </div>
+                                      <span className="text-sm font-medium">{florist.name || florist.floristName}</span>
+                                    </div>
+                                    
+                                    <div className="flex items-center space-x-1">
+                                      <button 
+                                        onClick={(e) => {
+                                          e.stopPropagation()
+                                          window.open(`tel:${florist.phone}`, '_self')
+                                        }}
+                                        className="w-7 h-7 bg-green-400 hover:bg-green-500 rounded-full flex items-center justify-center transition-colors"
+                                        title={`Appeler ${florist.name || florist.floristName}`}
+                                      >
+                                        <span className="text-white text-xs">📞</span>
+                                      </button>
+                                      <button 
+                                        onClick={(e) => {
+                                          e.stopPropagation()
+                                          window.open(`https://wa.me/${florist.phone?.replace(/\D/g, '') || ''}?text=Bonjour ${florist.name || florist.floristName}, concernant l'événement "${event.title}" du ${new Date(event.date).toLocaleDateString('fr-FR')}...`, '_blank')
+                                        }}
+                                        className="w-7 h-7 bg-green-500 hover:bg-green-600 rounded-full flex items-center justify-center transition-colors"
+                                        title={`WhatsApp ${florist.name || florist.floristName}`}
+                                      >
+                                        <span className="text-white text-xs">💬</span>
+                                      </button>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                            
+                            {/* Bouton pour assigner plus de fleuristes si manque */}
+                            {(event.assignedFlorists?.length || 0) < event.floristsRequired && (
+                              <button 
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  setSelectedEventForModernModal(event)
+                                  setShowModernEventModal(true)
+                                }}
+                                className="w-full mt-2 bg-teal-500 hover:bg-teal-600 text-white text-xs font-medium py-2 px-3 rounded-lg transition-colors"
+                              >
+                                + Assigner Fleuriste ({event.floristsRequired - (event.assignedFlorists?.length || 0)} manquant{event.floristsRequired - (event.assignedFlorists?.length || 0) > 1 ? 's' : ''})
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Actions rapides */}
+                      <div className="mt-4 flex items-center justify-between">
+                        <div className="flex items-center space-x-2">
+                          {urgency && urgency.level >= 4 && (
+                            <button 
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                // Action urgente (ex: appeler client)
+                              }}
+                              className="bg-red-500 hover:bg-red-600 text-white text-xs font-medium px-3 py-1 rounded-lg transition-colors"
+                            >
+                              📞 Appeler Client
+                            </button>
+                          )}
+                          
+                          {event.status === 'completed' && !event.isInvoiced && (
+                            <button 
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                // Action facturation
+                              }}
+                              className="bg-green-500 hover:bg-green-600 text-white text-xs font-medium px-3 py-1 rounded-lg transition-colors"
+                            >
+                              💰 Facturer
+                            </button>
+                          )}
+                        </div>
+                        
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setSelectedEventForEdit(event)
+                            setShowEditModal(true)
+                          }}
+                          className="text-gray-500 hover:text-gray-700 text-xs font-medium"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+          
+          {/* Footer avec actions globales - Format 7 juillet */}
+          <div className="p-4 border-t border-gray-100 bg-gray-50">
+            <div className="flex space-x-2">
+              <button 
+                onClick={() => {
+                  setSelectedEventForModernModal(null) // null = nouveau mode
+                  setShowModernEventModal(true)
+                }}
+                className="flex-1 bg-green-500 hover:bg-green-600 text-white font-medium py-2 px-4 rounded-lg transition-colors flex items-center justify-center space-x-1"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Nouvel Événement</span>
+              </button>
+              
+              {criticalEvents > 0 && (
+                <button className="bg-orange-500 hover:bg-orange-600 text-white font-medium py-2 px-4 rounded-lg transition-colors flex items-center space-x-1">
+                  <span>⚠️</span>
+                  <span>Traiter Urgent</span>
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+  
+  // Popup événements du client - MÊME DESIGN QUE LE MODAL DU JOUR
+  const renderClientPopup = () => {
+    if (!selectedClient) return null
+    
+    const clientEvents = events.filter(e => e.clientId === selectedClient)
+    const client = state.clients.find(c => c.id === selectedClient)
+    const clientName = client ? `${client.firstName} ${client.lastName}` : (clientEvents.length > 0 ? clientEvents[0].clientName : 'Client inconnu')
+    
+    // Ajouter urgence et trier par priorité EXACTEMENT comme le modal du jour
+    const eventsWithUrgency = clientEvents.length > 0 ? clientEvents.map(event => ({
+      ...event,
+      urgency: calculateEventUrgency(event)
+    })).sort((a, b) => {
+      // Trier par niveau d'urgence décroissant, puis par date puis par heure
+      if (b.urgency.level !== a.urgency.level) {
+        return b.urgency.level - a.urgency.level
+      }
+      const dateA = new Date(a.date).getTime()
+      const dateB = new Date(b.date).getTime()
+      if (dateA !== dateB) {
+        return dateA - dateB
+      }
+      return a.time.localeCompare(b.time)
+    }) : []
+
+    // Calculer les stats du client EXACTEMENT comme le modal du jour
+    const totalBudget = clientEvents.reduce((sum, event) => sum + event.budget, 0)
+    const criticalEvents = eventsWithUrgency.filter(e => e.urgency?.level >= 4).length
+    const facturationEvents = clientEvents.filter(e => e.status === 'completed' && !e.isInvoiced).length
+    
+    return (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+        <div className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] shadow-2xl overflow-hidden">
+          {/* Header standardisé EXACTEMENT comme le 7 juillet */}
+          <div className={`p-6 border-b border-gray-100 relative ${
+            criticalEvents > 0 
+              ? 'bg-gradient-to-r from-red-50 to-orange-50' 
+              : 'bg-white'
+          }`}>
+            {/* Badge urgence en haut */}
+            {criticalEvents > 0 && (
+              <div className="absolute top-3 left-6">
+                <span className="bg-red-500 text-white px-2 py-1 rounded-full text-xs font-medium flex items-center space-x-1">
+                  <span>🚨</span>
+                  <span>{criticalEvents} urgent{criticalEvents > 1 ? 's' : ''}</span>
+                </span>
+              </div>
+            )}
+            
+            {/* Bouton fermer */}
+            <button 
+              onClick={() => setSelectedClient(null)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 p-1"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            
+            {/* Titre et infos principales */}
+            <div className="pt-8">
+              <h2 className="text-xl font-bold text-gray-900">{clientName}</h2>
+              <div className="flex items-center justify-between mt-2">
+                <p className="text-sm text-gray-600">
+                  {clientEvents.length} événement{clientEvents.length > 1 ? 's' : ''}
+                </p>
+                <div className="flex items-center space-x-1">
+                  <DollarSign className="w-4 h-4 text-green-500" />
+                  <span className="font-bold text-green-600">{totalBudget.toLocaleString()}€</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          {/* Liste des événements avec hiérarchie d'urgence */}
+          <div className="overflow-y-auto max-h-[60vh]">
+            {clientEvents.length === 0 ? (
+              <div className="p-6 text-center text-gray-500">
+                <User className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                <p className="text-lg font-medium">Aucun événement</p>
+                <p className="text-sm">Ce client n'a pas d'événements</p>
+                <p className="text-xs text-gray-400 mt-2">Cliquez sur "Nouvel Événement" pour planifier</p>
+              </div>
+            ) : (
+              <div className="p-4 space-y-3">
+                {eventsWithUrgency.map((event) => {
+                  const urgency = event.urgency
+                  const kanbanColumn = getKanbanColumn(event.status)
+                  
+                  // Définir les couleurs selon priorité : Urgence > Statut automatique Kanban
+                  const getCardColors = () => {
+                    // Si événement critique ou urgent, priorité à l'urgence
+                    if (urgency.level >= 4) {
+                      return urgency.color === 'red' 
+                        ? 'border-red-300 bg-red-50' 
+                        : 'border-orange-300 bg-orange-50'
+                    }
+                    
+                    // UTILISER LE STATUT AUTOMATIQUE basé sur les fleuristes
+                    const actualStatus = getActualEventStatus(event)
+                    switch (actualStatus) {
+                      case 'draft':
+                        return 'border-gray-300 bg-gray-50' // Gris = Fleuristes manquants
+                      case 'confirmed':
+                        return 'border-green-300 bg-green-50' // Vert = Fleuristes confirmés complets
+                      case 'in_progress':
+                        return 'border-yellow-300 bg-yellow-50' // Jaune = Fleuristes à confirmer
+                      case 'completed':
+                        return 'border-blue-300 bg-blue-50' // Bleu = Terminé
+                      case 'cancelled':
+                        return 'border-red-300 bg-red-50' // Rouge = Annulé
+                      default:
+                        return 'border-gray-300 bg-gray-50'
+                    }
+                  }
+                  
+                  return (
+                    <div 
+                      key={event.id}
+                      className={`rounded-xl p-4 border-2 cursor-pointer transition-all hover:scale-[1.02] ${getCardColors()}`}
+                      onClick={() => {
+                        setSelectedEventForModernModal(event)
+                        setShowModernEventModal(true)
+                      }}
+                    >
+                      {/* Header événement avec urgence */}
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex items-center space-x-2 flex-1">
+                          <span className="text-lg">{urgency.emoji}</span>
+                          <div className="flex-1">
+                            <h3 className="font-bold text-gray-900 text-lg leading-tight">
+                              {event.title}
+                            </h3>
+                            <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium mt-1 ${
+                              // Si événement critique/urgent, utiliser couleur d'urgence
+                              urgency.level >= 4 ? (
+                                urgency.color === 'red' ? 'bg-red-100 text-red-800' : 'bg-orange-100 text-orange-800'
+                              ) : (
+                                // UTILISER LE STATUT AUTOMATIQUE pour les couleurs Kanban
+                                (() => {
+                                  const actualStatus = getActualEventStatus(event)
+                                  return actualStatus === 'draft' ? 'bg-gray-100 text-gray-800' :
+                                         actualStatus === 'confirmed' ? 'bg-green-100 text-green-800' :
+                                         actualStatus === 'in_progress' ? 'bg-yellow-100 text-yellow-800' :
+                                         actualStatus === 'completed' ? 'bg-blue-100 text-blue-800' :
+                                         actualStatus === 'cancelled' ? 'bg-red-100 text-red-800' :
+                                         'bg-gray-100 text-gray-800'
+                                })()
+                              )
+                            }`}>
+                              {/* Afficher le label d'urgence pour les critiques, sinon statut intelligent */}
+                              {urgency.level >= 4 ? urgency.label : (() => {
+                                const actualStatus = getActualEventStatus(event)
+                                const assignedCount = event.assignedFlorists?.length || 0
+                                const requiredCount = event.floristsRequired || 0
+                                
+                                if (actualStatus === 'confirmed') return `✅ Confirmé (${assignedCount}/${requiredCount})`
+                                if (actualStatus === 'in_progress') return `⚠️ En cours (${assignedCount}/${requiredCount})`
+                                if (actualStatus === 'draft') return `❌ Fleuristes manquants (${assignedCount}/${requiredCount})`
+                                if (actualStatus === 'completed') return '🎉 Terminé'
+                                if (actualStatus === 'cancelled') return '❌ Annulé'
+                                return kanbanColumn.title
+                              })()}
+                            </span>
+                          </div>
+                        </div>
+                        
+                        <div className="text-right">
+                          <div className="text-lg font-bold text-green-600">
+                            {event.budget.toLocaleString()}€
+                          </div>
+                          {event.status === 'completed' && !event.isInvoiced && (
+                            <span className="text-xs px-2 py-1 bg-orange-100 text-orange-800 rounded-full font-medium">
+                              À facturer
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      
+                      {/* Informations détaillées */}
+                      <div className="space-y-2 text-sm text-gray-700">
+                        <div className="flex items-center space-x-4">
+                          <div className="flex items-center space-x-1">
+                            <Clock className="w-4 h-4 text-blue-500" />
+                            <span className="font-medium">{event.time}</span>
+                            {event.endTime && event.endTime !== event.time && (
+                              <span className="text-gray-500">→ {event.endTime}</span>
+                            )}
+                          </div>
+                          <div className="flex items-center space-x-1">
+                            <CalendarIcon className="w-4 h-4 text-purple-500" />
+                            <span className="text-sm">
+                              {new Date(event.date).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })}
+                              {event.endDate && event.endDate !== event.date && (
+                                <span> → {new Date(event.endDate).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })}</span>
+                              )}
+                            </span>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center space-x-1">
+                          <MapPin className="w-4 h-4 text-green-500" />
+                          <span>{event.location}</span>
+                        </div>
+                        
+                        {/* Informations fleuristes */}
+                        {event.floristsRequired && (
+                          <div className="bg-white rounded-lg p-3 border border-gray-200">
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="text-sm font-medium text-gray-700">
+                                👥 Fleuristes requis: {event.assignedFlorists?.length || 0}/{event.floristsRequired}
+                              </span>
+                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                (event.assignedFlorists?.length || 0) >= event.floristsRequired 
+                                  ? 'bg-green-100 text-green-800' 
+                                  : 'bg-orange-100 text-orange-800'
+                              }`}>
+                                {(event.assignedFlorists?.length || 0) >= event.floristsRequired ? '✅ Complet' : '⚠️ Manque'}
+                              </span>
+                            </div>
+                            
+                            {/* Liste des fleuristes assignés */}
+                            {event.assignedFlorists && event.assignedFlorists.length > 0 && (
+                              <div className="space-y-2">
+                                {event.assignedFlorists.map((florist, index) => (
+                                  <div key={index} className="flex items-center justify-between bg-gray-50 rounded-lg p-2">
+                                    <div className="flex items-center space-x-2">
+                                      <div className="w-6 h-6 bg-teal-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
+                                        {florist.name ? florist.name.split(' ').map(n => n[0]).join('') : 'F'}
+                                      </div>
+                                      <span className="text-sm font-medium">{florist.name || florist.floristName}</span>
+                                    </div>
+                                    
+                                    <div className="flex items-center space-x-1">
+                                      <button 
+                                        onClick={(e) => {
+                                          e.stopPropagation()
+                                          if (florist.phone) {
+                                            window.open(`tel:${florist.phone}`, '_self')
+                                          }
+                                        }}
+                                        className="w-7 h-7 bg-green-400 hover:bg-green-500 rounded-full flex items-center justify-center transition-colors"
+                                        title={`Appeler ${florist.name || florist.floristName}`}
+                                      >
+                                        <span className="text-white text-xs">📞</span>
+                                      </button>
+                                      <button 
+                                        onClick={(e) => {
+                                          e.stopPropagation()
+                                          if (florist.phone) {
+                                            window.open(`https://wa.me/${florist.phone.replace(/\D/g, '')}?text=Bonjour ${florist.name || florist.floristName}, concernant l'événement "${event.title}" du ${new Date(event.date).toLocaleDateString('fr-FR')}...`, '_blank')
+                                          }
+                                        }}
+                                        className="w-7 h-7 bg-green-500 hover:bg-green-600 rounded-full flex items-center justify-center transition-colors"
+                                        title={`WhatsApp ${florist.name || florist.floristName}`}
+                                      >
+                                        <span className="text-white text-xs">💬</span>
+                                      </button>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                            
+                            {/* Bouton pour assigner plus de fleuristes si manque */}
+                            {(event.assignedFlorists?.length || 0) < event.floristsRequired && (
+                              <button 
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  setSelectedEventForModernModal(event)
+                                  setShowModernEventModal(true)
+                                }}
+                                className="w-full mt-2 bg-teal-500 hover:bg-teal-600 text-white text-xs font-medium py-2 px-3 rounded-lg transition-colors"
+                              >
+                                + Assigner Fleuriste ({event.floristsRequired - (event.assignedFlorists?.length || 0)} manquant{event.floristsRequired - (event.assignedFlorists?.length || 0) > 1 ? 's' : ''})
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Actions rapides */}
+                      <div className="mt-4 flex items-center justify-between">
+                        <div className="flex items-center space-x-2">
+                          {urgency && urgency.level >= 4 && (
+                            <button 
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                // Action urgente (ex: appeler client)
+                                if (client?.phone) {
+                                  window.open(`tel:${client.phone}`, '_self')
+                                }
+                              }}
+                              className="bg-red-500 hover:bg-red-600 text-white text-xs font-medium px-3 py-1 rounded-lg transition-colors"
+                            >
+                              📞 Appeler Client
+                            </button>
+                          )}
+                          
+                          {event.status === 'completed' && !event.isInvoiced && (
+                            <button 
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                // Action facturation
+                              }}
+                              className="bg-green-500 hover:bg-green-600 text-white text-xs font-medium px-3 py-1 rounded-lg transition-colors"
+                            >
+                              💰 Facturer
+                            </button>
+                          )}
+                        </div>
+                        
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setSelectedEventForEdit(event)
+                            setShowEditModal(true)
+                          }}
+                          className="text-gray-500 hover:text-gray-700 text-xs font-medium"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+          
+          {/* Footer avec actions globales - Format 7 juillet */}
+          <div className="p-4 border-t border-gray-100 bg-gray-50">
+            <div className="flex space-x-2">
+              <button 
+                onClick={() => {
+                  setShowNewEventModal(true)
+                }}
+                className="flex-1 bg-green-500 hover:bg-green-600 text-white font-medium py-2 px-4 rounded-lg transition-colors flex items-center justify-center space-x-1"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Nouvel Événement</span>
+              </button>
+              
+              {criticalEvents > 0 && (
+                <button className="bg-orange-500 hover:bg-orange-600 text-white font-medium py-2 px-4 rounded-lg transition-colors flex items-center space-x-1">
+                  <span>⚠️</span>
+                  <span>Traiter Urgent</span>
+                </button>
+              )}
+              
+              {client?.phone && (
+                <button 
+                  onClick={() => window.open(`tel:${client.phone}`, '_self')}
+                  className="bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-lg transition-colors flex items-center space-x-1"
+                >
+                  <Phone className="w-4 h-4" />
+                  <span>Appeler</span>
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // ✅ CORRECTION : Fermeture de la fonction renderClientPopup
+  
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Header responsive */}
+      <div className="bg-white">
+        <div className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 lg:py-6">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4">
+            <div className="flex-1">
+              <h1 className="text-lg sm:text-xl lg:text-2xl font-semibold text-gray-900 mb-1 sm:mb-2">
+                Calendrier
+              </h1>
+              <p className="text-xs sm:text-sm text-gray-500 leading-relaxed">
+                Gérez vos événements dans le temps
+              </p>
+            </div>
+
+            <div className="flex items-center space-x-2 sm:space-x-4">
+              <div className="flex bg-gray-100 rounded-lg p-1">
+                <button
+                  onClick={() => setViewMode('calendrier')}
+                  className={`px-2 sm:px-3 lg:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium rounded-md transition-all ${
+                    viewMode === 'calendrier'
+                      ? 'bg-white text-gray-900 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  <span className="hidden sm:inline">Calendrier</span>
+                  <span className="sm:hidden">Cal.</span>
+                </button>
+                <button
+                  onClick={() => setViewMode('kanban')}
+                  className={`px-2 sm:px-3 lg:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium rounded-md transition-all ${
+                    viewMode === 'kanban'
+                      ? 'bg-white text-gray-900 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  Kanban
+                </button>
+              </div>
+
+              <button className="bg-emerald-500 hover:bg-emerald-600 text-white px-2 sm:px-3 lg:px-4 py-1.5 sm:py-2 rounded-lg flex items-center space-x-1 text-xs sm:text-sm font-medium transition-colors">
+                <Plus className="w-3 h-3 sm:w-4 sm:h-4" />
+                <span className="hidden sm:inline">Nouvel Événement</span>
+                <span className="sm:hidden">Nouveau</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Contenu principal */}
+      <div className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 lg:py-6">
+        {viewMode === 'calendrier' ? renderCalendarView() : renderKanbanView()}
+      </div>
+      
+      {/* Popups */}
+      {renderDayPopup()}
+      {renderClientPopup()}
+      
+      {/* Notification - Toujours visible en haut à droite */}
+      {showNotification && (
+        <div className="fixed top-20 right-4 z-[9999] bg-white border border-gray-200 rounded-lg shadow-xl p-4 max-w-sm animate-slide-in">
+          <div className="flex items-center space-x-3">
+            <Bell className="w-5 h-5 text-blue-500" />
+            <p className="text-sm text-gray-900">{notificationMessage}</p>
+          </div>
+        </div>
+      )}
+      
+      {/* Modal d'archivage */}
+      {showArchiveModal && selectedEventForArchive && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl">
+            <div className="p-6 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-indigo-50">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <Archive className="w-6 h-6 text-blue-500" />
+                  <h2 className="text-xl font-bold text-gray-900">Archiver l'événement</h2>
+                </div>
+                <button 
+                  onClick={() => setShowArchiveModal(false)}
+                  className="text-gray-400 hover:text-gray-600 p-2 hover:bg-white rounded-full transition-all duration-200"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+            
+            <div className="p-6">
+              <div className="mb-6">
+                <h3 className="font-semibold text-gray-900 mb-2">{selectedEventForArchive.title}</h3>
+                <p className="text-sm text-gray-600">Client : {selectedEventForArchive.clientName}</p>
+                <p className="text-sm text-gray-600">Budget : {selectedEventForArchive.budget.toLocaleString('fr-FR')}€</p>
+              </div>
+              
+              <div className="mb-6">
+                <h4 className="font-medium text-gray-900 mb-3">💰 Avez-vous facturé cet événement ?</h4>
+                
+                <div className="space-y-3">
+                  <button
+                    onClick={() => confirmArchive(false)}
+                    className="w-full bg-gray-100 hover:bg-gray-200 text-gray-900 px-4 py-3 rounded-lg transition-colors duration-200 text-left"
+                  >
+                    <div className="font-medium">❌ Non, pas encore facturé</div>
+                    <div className="text-sm text-gray-600">L'événement restera dans la liste</div>
+                  </button>
+                  
+                  <button
+                    onClick={() => confirmArchive(true, true)}
+                    className="w-full bg-yellow-100 hover:bg-yellow-200 text-yellow-900 px-4 py-3 rounded-lg transition-colors duration-200 text-left"
+                  >
+                    <div className="font-medium">📋 Oui, facturé mais pas payé</div>
+                    <div className="text-sm text-yellow-700">Garder jusqu'au paiement</div>
+                  </button>
+                  
+                  <button
+                    onClick={() => confirmArchive(true, false)}
+                    className="w-full bg-green-100 hover:bg-green-200 text-green-900 px-4 py-3 rounded-lg transition-colors duration-200 text-left"
+                  >
+                    <div className="font-medium">💰😊 Oui, facturé ET payé</div>
+                    <div className="text-sm text-green-700">Archiver définitivement</div>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Modal d'édition d'événement et assignation fleuristes */}
+      {showEditModal && selectedEventForEdit && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl max-w-lg w-full max-h-[80vh] overflow-hidden shadow-2xl">
+            <div className="p-6 border-b border-gray-100 bg-gradient-to-r from-emerald-50 to-teal-50">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <User className="w-6 h-6 text-emerald-500" />
+                  <h2 className="text-xl font-bold text-gray-900">Modifier l'événement</h2>
+                </div>
+                <button 
+                  onClick={() => {
+                    setShowEditModal(false)
+                    setSelectedEventForEdit(null)
+                  }}
+                  className="text-gray-400 hover:text-gray-600 p-2 hover:bg-white rounded-full transition-all duration-200"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+            
+            <div className="p-6 overflow-y-auto max-h-[65vh]">
+              <div className="space-y-6">
+                {/* Informations événement */}
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <h3 className="font-semibold text-gray-900 mb-2">{selectedEventForEdit.title}</h3>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <span className="text-gray-600">Client :</span>
+                      <span className="ml-2 font-medium">{selectedEventForEdit.clientName}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">Date :</span>
+                      <span className="ml-2 font-medium">{new Date(selectedEventForEdit.date).toLocaleDateString('fr-FR')}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">Heure :</span>
+                      <span className="ml-2 font-medium">{selectedEventForEdit.time}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">Budget :</span>
+                      <span className="ml-2 font-medium text-green-600">{selectedEventForEdit.budget.toLocaleString('fr-FR')}€</span>
+                    </div>
+                  </div>
+                  <div className="mt-2">
+                    <span className="text-gray-600">Lieu :</span>
+                    <span className="ml-2 font-medium">{selectedEventForEdit.location}</span>
+                  </div>
+                </div>
+                
+                {/* Assignation fleuriste */}
+                <div>
+                  <h4 className="font-semibold text-gray-900 mb-4 flex items-center">
+                    <User className="w-5 h-5 mr-2 text-emerald-500" />
+                    Assignation Fleuriste
+                  </h4>
+                  
+                  {selectedEventForEdit.hasFlorist && selectedEventForEdit.floristName && (
+                    <div className="mb-4 p-3 bg-emerald-50 border border-emerald-200 rounded-lg">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-2">
+                          <CheckCircle className="w-5 h-5 text-emerald-600" />
+                          <span className="text-emerald-800 font-medium">Fleuriste assigné :</span>
+                          <span className="text-emerald-900 font-bold">{selectedEventForEdit.floristName}</span>
+                        </div>
+                        <button
+                          onClick={() => updateEventFlorist(selectedEventForEdit.id, null, null)}
+                          className="text-red-500 hover:text-red-700 text-sm font-medium px-3 py-1 hover:bg-white rounded transition-all duration-200"
+                        >
+                          Retirer
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                  
+                  <div className="space-y-3">
+                    <h5 className="text-sm font-medium text-gray-700">
+                      {selectedEventForEdit.hasFlorist ? 'Changer de fleuriste :' : 'Choisir un fleuriste :'}
+                    </h5>
+                    
+                    {availableFlorists.map(florist => (
+                      <div 
+                        key={florist.id}
+                        className={`p-3 rounded-lg border transition-all duration-200 cursor-pointer ${
+                          florist.available 
+                            ? 'border-gray-200 hover:border-emerald-300 hover:bg-emerald-50' 
+                            : 'border-gray-100 bg-gray-50 cursor-not-allowed'
+                        }`}
+                        onClick={() => {
+                          if (florist.available) {
+                            updateEventFlorist(selectedEventForEdit.id, florist.id, florist.name || florist.floristName)
+                            setShowEditModal(false)
+                            setSelectedEventForEdit(null)
+                          }
+                        }}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-3">
+                            <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold ${
+                              florist.available ? 'bg-emerald-500' : 'bg-gray-400'
+                            }`}>
+                              {(florist.name || florist.floristName || 'FL').split(' ').map(n => n[0]).join('')}
+                            </div>
+                            <div>
+                              <h6 className={`font-medium ${florist.available ? 'text-gray-900' : 'text-gray-500'}`}>
+                                {florist.name || florist.floristName}
+                              </h6>
+                              <p className={`text-xs ${florist.available ? 'text-gray-600' : 'text-gray-400'}`}>
+                                {florist.speciality}
+                              </p>
+                            </div>
+                          </div>
+                          
+                          <div className="flex items-center space-x-2">
+                            {florist.available ? (
+                              <div className="flex items-center space-x-1 text-green-600">
+                                <CheckCircle className="w-4 h-4" />
+                                <span className="text-xs font-medium">Disponible</span>
+                              </div>
+                            ) : (
+                              <div className="flex items-center space-x-1 text-red-500">
+                                <X className="w-4 h-4" />
+                                <span className="text-xs font-medium">Indisponible</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  
+                  {!selectedEventForEdit.hasFlorist && (
+                    <div className="mt-4 p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                      <div className="flex items-center space-x-2">
+                        <AlertCircle className="w-4 h-4 text-orange-500" />
+                        <span className="text-orange-800 text-sm">
+                          Aucun fleuriste assigné. Cliquez sur un fleuriste disponible pour l'assigner.
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Modal de création d'événement */}
+      {showNewEventModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-hidden shadow-2xl">
+            <div className="p-6 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-indigo-50">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <Plus className="w-6 h-6 text-blue-500" />
+                  <h2 className="text-xl font-bold text-gray-900">Nouvel Événement</h2>
+                </div>
+                <button 
+                  onClick={() => setShowNewEventModal(false)}
+                  className="text-gray-400 hover:text-gray-600 p-2 hover:bg-white rounded-full transition-all duration-200"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+            
+            <div className="p-6 overflow-y-auto max-h-[75vh]">
+              <form className="space-y-4">
+                {/* Titre */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Titre de l'événement *
+                  </label>
+                  <input 
+                    type="text" 
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="ex: Mariage Sophie & Marc"
+                  />
+                </div>
+                
+                {/* Date et heure */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Date *
+                    </label>
+                    <input 
+                      type="date" 
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      defaultValue={selectedDay || ''}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Heure *
+                    </label>
+                    <input 
+                      type="time" 
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                </div>
+                
+                {/* Client */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Client *
+                  </label>
+                  <input 
+                    type="text" 
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Nom du client"
+                  />
+                </div>
+                
+                {/* Lieu */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Lieu *
+                  </label>
+                  <input 
+                    type="text" 
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Adresse de l'événement"
+                  />
+                </div>
+                
+                {/* Budget */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Budget estimé (€)
+                  </label>
+                  <input 
+                    type="number" 
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="1500"
+                  />
+                </div>
+                
+                {/* Catégorie */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Type d'événement
+                  </label>
+                  <select className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    <option value="">Sélectionner un type</option>
+                    <option value="mariage">Mariage</option>
+                    <option value="anniversaire">Anniversaire</option>
+                    <option value="entreprise">Événement d'entreprise</option>
+                    <option value="funeraire">Funéraire</option>
+                    <option value="decoration">Décoration</option>
+                    <option value="autre">Autre</option>
+                  </select>
+                </div>
+                
+                {/* Fleuristes requis */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Nombre de fleuristes requis
+                  </label>
+                  <select className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    <option value="0">Aucun fleuriste</option>
+                    <option value="1">1 fleuriste</option>
+                    <option value="2">2 fleuristes</option>
+                    <option value="3">3 fleuristes</option>
+                    <option value="4">4 fleuristes ou plus</option>
+                  </select>
+                </div>
+                
+                {/* Description */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Description
+                  </label>
+                  <textarea 
+                    rows={3}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Détails de l'événement..."
+                  />
+                </div>
+              </form>
+            </div>
+            
+            {/* Footer */}
+            <div className="p-6 border-t border-gray-100 bg-gray-50">
+              <div className="flex space-x-3">
+                <button 
+                  onClick={() => setShowNewEventModal(false)}
+                  className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded-lg transition-colors"
+                >
+                  Annuler
+                </button>
+                <button 
+                  onClick={() => {
+                    // Logique de sauvegarde ici
+                    setShowNewEventModal(false)
+                    setSelectedDay(null) // Fermer aussi le popup du jour
+                  }}
+                  className="flex-1 bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-lg transition-colors"
+                >
+                  Créer l'événement
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Nouveau Modal événement moderne avec assignation fleuristes */}
+      <EventModal
+        event={selectedEventForModernModal}
+        client={selectedEventForModernModal ? 
+          clientsData.find(c => c.firstName + ' ' + c.lastName === selectedEventForModernModal.clientName) : 
+          undefined
+        }
+        isOpen={showModernEventModal}
+        onClose={() => {
+          setShowModernEventModal(false)
+          setSelectedEventForModernModal(null)
+        }}
+        onEdit={(updatedEvent) => {
+          // Détecter si c'est une création ou modification
+          const isCreating = !selectedEventForModernModal || selectedEventForModernModal.id.startsWith('temp-')
+          
+          if (isCreating) {
+            // Créer un nouvel événement
+            actions.createEvent({
+              title: updatedEvent.title,
+              description: updatedEvent.description || '',
+              date: updatedEvent.date,
+              time: updatedEvent.time,
+              endTime: updatedEvent.endTime,
+              location: updatedEvent.location,
+              clientId: updatedEvent.clientId,
+              clientPhone: updatedEvent.clientPhone,
+              budget: updatedEvent.budget,
+              status: updatedEvent.status,
+              flowers: updatedEvent.flowers || [],
+              floristsRequired: updatedEvent.floristsRequired,
+              assignedFlorists: updatedEvent.assignedFlorists,
+              notes: updatedEvent.notes
+            })
+            console.log('✅ Nouvel événement créé:', updatedEvent.title)
+          } else {
+            // Modifier un événement existant
+            actions.updateEvent(updatedEvent.id, updatedEvent)
+            console.log('✅ Événement modifié:', updatedEvent.title)
+          }
+          
+          setShowModernEventModal(false)
+          setSelectedEventForModernModal(null)
+        }
+      />
+    </div>
+  )
+}
+
+export default CalendarPage

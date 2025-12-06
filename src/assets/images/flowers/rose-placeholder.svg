@@ -1,0 +1,33 @@
+<svg width="300" height="200" viewBox="0 0 300 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="300" height="200" fill="#f8fafc"/>
+  
+  <!-- Rose stylisée -->
+  <defs>
+    <radialGradient id="roseGradient" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" style="stop-color:#fce7f3;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#f9a8d4;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#ec4899;stop-opacity:1" />
+    </radialGradient>
+  </defs>
+  
+  <!-- Tige -->
+  <rect x="147" y="120" width="6" height="60" fill="#22c55e" rx="3"/>
+  
+  <!-- Feuilles -->
+  <ellipse cx="130" cy="140" rx="15" ry="8" fill="#16a34a" transform="rotate(-30 130 140)"/>
+  <ellipse cx="170" cy="150" rx="12" ry="6" fill="#16a34a" transform="rotate(25 170 150)"/>
+  
+  <!-- Rose (pétales en spirale) -->
+  <circle cx="150" cy="80" r="40" fill="url(#roseGradient)"/>
+  <circle cx="150" cy="80" r="30" fill="#f472b6" opacity="0.8"/>
+  <circle cx="150" cy="80" r="20" fill="#ec4899" opacity="0.6"/>
+  <circle cx="150" cy="80" r="10" fill="#be185d" opacity="0.4"/>
+  
+  <!-- Détails des pétales -->
+  <path d="M130 80 Q150 60 170 80 Q150 100 130 80" fill="#f9a8d4" opacity="0.7"/>
+  <path d="M150 60 Q170 80 150 100 Q130 80 150 60" fill="#f472b6" opacity="0.5"/>
+  
+  <!-- Texte -->
+  <text x="150" y="190" font-family="Arial, sans-serif" font-size="14" text-anchor="middle" fill="#6b7280">Rose</text>
+</svg>

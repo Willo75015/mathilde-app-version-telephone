@@ -1,0 +1,146 @@
+import React from 'react'
+import { motion } from 'framer-motion'
+import { Calendar, MapPin, User, ArrowRight } from 'lucide-react'
+import Card, { CardHeader, CardTitle, CardContent } from '@/components/ui/Card'
+import Badge from '@/components/ui/Badge'
+import Button from '@/components/ui/Button'
+import { useEvents, useClients } from '@/contexts/AppContext'
+import { EventStatus } from '@/types'
+
+interface RecentEventsProps {
+  navigate?: (page: string, params?: any) => void
+}
+
+const RecentEvents: React.FC<RecentEventsProps> = ({ navigate }) => {
+  const { events } = useEvents()
+  const { clients } = useClients()
+  
+  // Prendre les 5 événements les plus récents
+  const recentEvents = events
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    .slice(0, 5)
+  
+  const getClient = (clientId: string) => {
+    return clients.find(client => client.id === clientId)
+  }
+  
+  const getStatusVariant = (status: EventStatus) => {
+    switch (status) {
+      case EventStatus.DRAFT:
+        return 'default'
+      case EventStatus.CONFIRMED:
+        return 'primary'
+      case EventStatus.IN_PROGRESS:
+        return 'warning'
+      case EventStatus.COMPLETED:
+        return 'success'
+      case EventStatus.CANCELLED:
+        return 'danger'
+      default:
+        return 'default'
+    }
+  }
+
+  const getStatusLabel = (status: EventStatus) => {
+    switch (status) {
+      case EventStatus.DRAFT:
+        return 'Brouillon'
+      case EventStatus.CONFIRMED:
+        return 'Confirmé'
+      case EventStatus.IN_PROGRESS:
+        return 'En cours'
+      case EventStatus.COMPLETED:
+        return 'Terminé'
+      case EventStatus.CANCELLED:
+        return 'Annulé'
+      default:
+        return 'Inconnu'
+    }
+  }
+
+  const handleViewAllEvents = () => {
+    console.log('🎯 Navigation vers tous les événements')
+    if (navigate) {
+      navigate('events')
+    } else {
+      window.dispatchEvent(new CustomEvent('navigate', { detail: { page: 'events' } }))
+    }
+  }
+  
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center space-x-2">
+            <Calendar className="w-5 h-5" />
+            <span>Événements récents</span>
+          </CardTitle>
+          
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            rightIcon={<ArrowRight className="w-4 h-4" />}
+            onClick={handleViewAllEvents}
+          >
+            Voir tout
+          </Button>
+        </div>
+      </CardHeader>
+      
+      <CardContent>
+        {recentEvents.length === 0 ? (
+          <div className="text-center py-8">
+            <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+            <p className="text-gray-500 dark:text-gray-400">
+              Aucun événement récent
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {recentEvents.map((event) => {
+              const client = getClient(event.clientId)
+              
+              return (
+                <motion.div
+                  key={event.id}
+                  whileHover={{ scale: 1.01 }}
+                  className="p-3 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-pointer"
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <h4 className="font-medium text-gray-900 dark:text-white">
+                        {event.title}
+                      </h4>
+                      <Badge variant={getStatusVariant(event.status)} size="sm">
+                        {getStatusLabel(event.status)}
+                      </Badge>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center space-x-4 mt-2 text-sm text-gray-500 dark:text-gray-400">
+                    <div className="flex items-center space-x-1">
+                      <User className="w-4 h-4" />
+                      <span>{client ? `${client.firstName} ${client.lastName}` : 'Client inconnu'}</span>
+                    </div>
+                    
+                    <div className="flex items-center space-x-1">
+                      <Calendar className="w-4 h-4" />
+                      <span>{new Date(event.date).toLocaleDateString('fr-FR')}</span>
+                    </div>
+                    
+                    <div className="flex items-center space-x-1">
+                      <MapPin className="w-4 h-4" />
+                      <span>{event.location}</span>
+                    </div>
+                  </div>
+                </motion.div>
+              )
+            })}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  )
+}
+
+export default RecentEvents
