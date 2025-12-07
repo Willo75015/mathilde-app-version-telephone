@@ -20,6 +20,11 @@ body {
   line-height: 1.5;
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch; /* Smooth scroll sur iOS */
+  overscroll-behavior-y: contain; /* Désactive pull-to-refresh */
+}
+
+html {
+  overscroll-behavior: none; /* Désactive pull-to-refresh sur tout le document */
 }
 
 /* ===========================================
