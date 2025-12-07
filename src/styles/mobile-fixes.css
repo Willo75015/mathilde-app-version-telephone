@@ -561,13 +561,30 @@ h1, h2, h3, h4, h5, h6 {
 
   /* Fix alignement icônes dans les flex */
   .flex.items-center svg,
-  .flex.items-center > div:first-child {
+  .flex.items-center > div:first-child,
+  .flex svg,
+  [class*="space-x"] svg,
+  [class*="space-y"] svg {
     flex-shrink: 0;
+    display: inline-block;
+    vertical-align: middle;
   }
 
   /* Espacements icônes-texte */
   .space-x-2 > * + * { margin-left: 0.375rem !important; }
   .space-x-3 > * + * { margin-left: 0.5rem !important; }
+
+  /* Fix pour les lignes avec icône + texte */
+  .flex.items-center {
+    align-items: center !important;
+  }
+
+  /* Icônes mr-2, mr-3 - garder l'alignement */
+  svg.mr-2, svg.mr-3, svg[class*="mr-"] {
+    flex-shrink: 0;
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+  }
 
   /* Rounded - réduire */
   .rounded-xl { border-radius: 0.5rem !important; }
