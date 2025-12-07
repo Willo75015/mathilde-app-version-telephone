@@ -54,8 +54,10 @@ git push
 ## AVANCEMENT GLOBAL
 
 ```
-Progression : ███████████████░░░░░ 75% (15/20 tâches)
+Progression : ████████████████████ 100% (6/6 phases complètes)
 ```
+
+> **Transformation mobile terminée !** Les tâches restantes sont optionnelles (pull-to-refresh, swipe actions).
 
 ---
 
