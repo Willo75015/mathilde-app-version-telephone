@@ -1,5 +1,5 @@
 import React from 'react'
-import { Home, Calendar, Flower, Users, BarChart3 } from 'lucide-react'
+import { Home, Calendar, Flower, Users, BarChart3, Scissors } from 'lucide-react'
 import { clsx } from 'clsx'
 
 interface BottomNavigationProps {
@@ -13,6 +13,7 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({ currentPage, naviga
     { id: 'calendar', label: 'Agenda', icon: Calendar },
     { id: 'events', label: 'Events', icon: Flower },
     { id: 'clients', label: 'Clients', icon: Users },
+    { id: 'fleuriste', label: 'Fleuristes', icon: Scissors },
     { id: 'analytics', label: 'Stats', icon: BarChart3 },
   ]
 
@@ -43,13 +44,13 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({ currentPage, naviga
             >
               <Icon
                 className={clsx(
-                  'w-6 h-6 mb-1 transition-transform',
+                  'w-5 h-5 mb-0.5 transition-transform',
                   isActive && 'scale-110'
                 )}
                 strokeWidth={isActive ? 2.5 : 2}
               />
               <span className={clsx(
-                'text-xs font-medium truncate',
+                'text-[10px] font-medium truncate',
                 isActive ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'
               )}>
                 {item.label}
