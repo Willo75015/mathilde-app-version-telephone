@@ -2,6 +2,7 @@ import React, { forwardRef } from 'react'
 import { motion, MotionProps } from 'framer-motion'
 import { clsx } from 'clsx'
 import { Loader2 } from 'lucide-react'
+import { useReducedMotion } from '@/hooks/useReducedMotion'
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger'
@@ -24,6 +25,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(({
   animation,
   ...props
 }, ref) => {
+  const shouldReduceMotion = useReducedMotion()
   const baseClasses = [
     'inline-flex items-center justify-center font-medium rounded-lg',
     'transition-all duration-200 ease-in-out',
@@ -77,7 +79,8 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(({
     className
   )
   
-  const defaultAnimation: MotionProps = {
+  // Animations réduites sur mobile pour de meilleures performances
+  const defaultAnimation: MotionProps = shouldReduceMotion ? {} : {
     whileHover: { scale: disabled ? 1 : 1.02 },
     whileTap: { scale: disabled ? 1 : 0.98 },
     transition: { type: "spring", stiffness: 400, damping: 17 }

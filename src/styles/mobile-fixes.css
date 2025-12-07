@@ -323,6 +323,31 @@ label {
   transition: all 0.2s ease;
 }
 
+/* Transitions CSS légères pour mobile (alternative à framer-motion) */
+.mobile-fade-in {
+  opacity: 0;
+  animation: fadeIn 0.15s ease forwards;
+}
+
+.mobile-slide-up {
+  opacity: 0;
+  transform: translateY(10px);
+  animation: slideUp 0.2s ease forwards;
+}
+
+@keyframes fadeIn {
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 /* Désactiver les animations si l'utilisateur préfère */
 @media (prefers-reduced-motion: reduce) {
   *,
@@ -331,6 +356,26 @@ label {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+}
+
+/* Sur mobile : réduire les animations lourdes */
+@media (max-width: 767px) {
+  /* Transitions plus rapides */
+  .transition-all {
+    transition-duration: 0.15s !important;
+  }
+
+  /* Désactiver les hover effects (inutiles sur tactile) */
+  .hover\:scale-105:hover,
+  .hover\:scale-110:hover {
+    transform: none !important;
+  }
+
+  /* Garder les tap effects légers */
+  .active\:scale-95:active {
+    transform: scale(0.97) !important;
+    transition: transform 0.1s ease !important;
   }
 }
 

@@ -54,7 +54,7 @@ git push
 ## AVANCEMENT GLOBAL
 
 ```
-Progression : ██████████░░░░░░░░░░ 55% (11/20 tâches)
+Progression : █████████████░░░░░░░ 65% (13/20 tâches)
 ```
 
 ---
@@ -99,10 +99,10 @@ Progression : ██████████░░░░░░░░░░ 55% (
 
 ### PHASE 5 : ANIMATIONS (Priorité Basse)
 
-| # | Tâche | Statut | Fichiers à modifier | Notes |
-|---|-------|--------|---------------------|-------|
-| 5.1 | Désactiver animations lourdes | 🔲 À faire | `src/pages/Home.tsx`, autres | Supprimer framer-motion sur mobile |
-| 5.2 | Transitions CSS légères | 🔲 À faire | `src/styles/mobile-fixes.css` | `transition: transform 0.15s` |
+| # | Tâche | Statut | Fichiers modifiés | Notes |
+|---|-------|--------|-------------------|-------|
+| 5.1 | Désactiver animations lourdes | ✅ Fait | `src/hooks/useReducedMotion.ts` (CRÉÉ), `src/components/ui/Button.tsx`, `src/components/ui/Card.tsx` | Hook détecte mobile + prefers-reduced-motion |
+| 5.2 | Transitions CSS légères | ✅ Fait | `src/styles/mobile-fixes.css` | Keyframes fadeIn/slideUp, media query mobile |
 | 5.3 | Réduire les variants | 🔲 À faire | Tous composants avec motion | Simplifier ou supprimer |
 
 ### PHASE 6 : TOUCH & GESTURES (Priorité Basse)
@@ -119,7 +119,8 @@ Progression : ██████████░░░░░░░░░░ 55% (
 
 | Date | Commit | Description |
 |------|--------|-------------|
-| 2025-12-07 | `à venir` | feat: Calendrier mobile - header compact, stats scrollables |
+| 2025-12-07 | - | feat: Animations légères mobile - hook useReducedMotion + CSS optimisé |
+| 2025-12-07 | `cba00f3` | feat: Calendrier mobile - header compact, stats scrollables |
 | 2025-12-07 | `0224dd8` | feat: Modales plein écran sur mobile (Modal + EventModal) |
 | 2025-12-07 | `783073b` | feat: Mobile-first CSS - tailles, espacements, boutons tactiles |
 | 2025-12-07 | `32ea181` | docs: Add MOBILE_TRANSFORMATION_TRACKER.md |
@@ -136,7 +137,10 @@ Progression : ██████████░░░░░░░░░░ 55% (
 | `src/components/layout/BottomNavigation.tsx` | Navigation en bas style Instagram (NOUVEAU) |
 | `src/pages/Home.tsx` | Page d'accueil dashboard |
 | `src/components/ui/Modal.tsx` | Composant modal générique |
+| `src/components/ui/Button.tsx` | Bouton avec animations réduites sur mobile |
+| `src/components/ui/Card.tsx` | Card avec animations réduites sur mobile |
 | `src/components/events/EventModal.tsx` | Modal d'édition d'événement (gros fichier) |
+| `src/hooks/useReducedMotion.ts` | Hook détection animations réduites (NOUVEAU) |
 | `src/styles/mobile-fixes.css` | CSS spécifique mobile |
 | `tailwind.config.js` | Configuration Tailwind |
 

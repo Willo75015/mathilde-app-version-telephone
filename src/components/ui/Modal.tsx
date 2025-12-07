@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, ChevronLeft } from 'lucide-react'
 import { clsx } from 'clsx'
+import { useReducedMotion } from '@/hooks/useReducedMotion'
 
 interface ModalProps {
   isOpen: boolean
@@ -38,6 +39,7 @@ const Modal: React.FC<ModalProps> = ({
   className
 }) => {
   const isMobile = useIsMobile()
+  const shouldReduceMotion = useReducedMotion()
 
   // Fermer avec Escape
   useEffect(() => {
@@ -67,7 +69,12 @@ const Modal: React.FC<ModalProps> = ({
   }
 
   // Animations différentes pour mobile vs desktop
-  const mobileModalVariants = {
+  // Version ultra-légère si animations réduites
+  const mobileModalVariants = shouldReduceMotion ? {
+    hidden: { opacity: 0 },
+    visible: { opacity: 1, transition: { duration: 0.1 } },
+    exit: { opacity: 0, transition: { duration: 0.1 } }
+  } : {
     hidden: {
       y: '100%',
       opacity: 1

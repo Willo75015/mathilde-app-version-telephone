@@ -1,6 +1,7 @@
 import React from 'react'
 import { motion } from 'framer-motion'
 import { clsx } from 'clsx'
+import { useReducedMotion } from '@/hooks/useReducedMotion'
 
 interface CardProps {
   children: React.ReactNode
@@ -19,6 +20,7 @@ const Card: React.FC<CardProps> = ({
   clickable = false,
   onClick
 }) => {
+  const shouldReduceMotion = useReducedMotion()
   const baseClasses = [
     'rounded-lg transition-all duration-200',
     clickable && 'cursor-pointer'
@@ -60,10 +62,11 @@ const Card: React.FC<CardProps> = ({
     className
   )
   
+  // Animations réduites sur mobile pour de meilleures performances
   const cardProps = {
     className: classes,
     onClick: clickable ? onClick : undefined,
-    ...(clickable && {
+    ...(clickable && !shouldReduceMotion && {
       whileHover: { scale: 1.02, y: -2 },
       whileTap: { scale: 0.98 },
       transition: { type: "spring", stiffness: 300, damping: 20 }
