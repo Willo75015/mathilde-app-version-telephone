@@ -848,9 +848,9 @@ Mathilde Fleurs`
               </div>
             )}
 
-            <div ref={scrollContainerRef} className={`flex-1 overflow-y-auto ${isMobile ? 'pb-24' : ''}`}>
+            <div ref={scrollContainerRef} className={`flex-1 overflow-y-auto ${isMobile ? 'pb-16' : ''}`}>
               {/* CONTENU DYNAMIQUE SELON LA VUE */}
-              <div className={isMobile ? 'p-4' : 'p-6'}>
+              <div className={isMobile ? 'p-2' : 'p-6'}>
                 {currentView === 'details' ? (
                   /* VUE DÉTAILS ÉVÉNEMENT */
                   <div className="max-w-4xl mx-auto space-y-6">
@@ -1365,27 +1365,35 @@ Mathilde Fleurs`
               </div>
             </div>
 
-            {/* Footer avec actions */}
-            <div className="flex items-center justify-between p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
-              <div className="text-sm text-gray-600 dark:text-gray-400">
-                {currentView === 'assignment' && (
-                  <span>
-                    👥 {confirmedCount}/{requiredFlorists} fleuriste{requiredFlorists > 1 ? 's' : ''} confirmé{confirmedCount > 1 ? 's' : ''}
-                  </span>
-                )}
-              </div>
-              
-              <div className="flex items-center space-x-3">
+            {/* Footer avec actions - Adapté mobile */}
+            <div className={`border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 ${
+              isMobile
+                ? 'fixed bottom-0 left-0 right-0 p-3 pb-safe z-20'
+                : 'flex items-center justify-between p-6'
+            }`}>
+              {/* Stats fleuristes - masqué sur mobile pour gagner de l'espace */}
+              {!isMobile && (
+                <div className="text-sm text-gray-600 dark:text-gray-400">
+                  {currentView === 'assignment' && (
+                    <span>
+                      👥 {confirmedCount}/{requiredFlorists} fleuriste{requiredFlorists > 1 ? 's' : ''} confirmé{confirmedCount > 1 ? 's' : ''}
+                    </span>
+                  )}
+                </div>
+              )}
+
+              <div className={`flex items-center ${isMobile ? 'w-full space-x-2' : 'space-x-3'}`}>
                 <Button
                   variant="secondary"
                   onClick={handleCancel}
-                  leftIcon={<X className="w-4 h-4" />}
+                  leftIcon={!isMobile ? <X className="w-4 h-4" /> : undefined}
+                  className={isMobile ? 'flex-1 text-sm py-2' : ''}
                 >
-                  Annuler
+                  {isMobile ? 'Annuler' : 'Annuler'}
                 </Button>
-                
-                {/* 🆕 BOUTON TEST WORKFLOW */}
-                {confirmedCount >= requiredFlorists && assignments.some(a => a.status === 'pending') && (
+
+                {/* 🆕 BOUTON TEST WORKFLOW - Caché sur mobile car moins prioritaire */}
+                {!isMobile && confirmedCount >= requiredFlorists && assignments.some(a => a.status === 'pending') && (
                   <Button
                     variant="outline"
                     onClick={applyWorkflowNow}
@@ -1395,14 +1403,14 @@ Mathilde Fleurs`
                     🔥 Appliquer Workflow
                   </Button>
                 )}
-                
+
                 <Button
                   variant="primary"
-                  leftIcon={<CheckCircle className="w-4 h-4" />}
+                  leftIcon={!isMobile ? <CheckCircle className="w-4 h-4" /> : undefined}
                   onClick={handleSave}
-                  className="bg-green-500 hover:bg-green-600"
+                  className={`bg-green-500 hover:bg-green-600 ${isMobile ? 'flex-1 text-sm py-2' : ''}`}
                 >
-                  ✅ Valider & Synchroniser
+                  {isMobile ? '✅ Valider' : '✅ Valider & Synchroniser'}
                 </Button>
               </div>
             </div>
