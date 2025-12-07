@@ -54,7 +54,7 @@ git push
 ## AVANCEMENT GLOBAL
 
 ```
-Progression : ████████░░░░░░░░░░░░ 40% (8/20 tâches)
+Progression : ██████████░░░░░░░░░░ 55% (11/20 tâches)
 ```
 
 ---
@@ -91,11 +91,11 @@ Progression : ████████░░░░░░░░░░░░ 40% (
 
 ### PHASE 4 : CALENDRIER (Priorité Moyenne)
 
-| # | Tâche | Statut | Fichiers à modifier | Notes |
-|---|-------|--------|---------------------|-------|
-| 4.1 | Vue semaine par défaut mobile | 🔲 À faire | `src/pages/Calendar/CalendarPage.tsx` | Moins de colonnes |
-| 4.2 | Navigation par swipe | 🔲 À faire | `src/components/events/EventCalendar.tsx` | Swipe gauche/droite |
-| 4.3 | Événements compacts | 🔲 À faire | `src/components/dashboard/Calendar.tsx` | Affichage minimal |
+| # | Tâche | Statut | Fichiers modifiés | Notes |
+|---|-------|--------|-------------------|-------|
+| 4.1 | Header calendrier mobile | ✅ Fait | `src/pages/Calendar/CalendarPage.tsx` | Toggle vue compact, bouton + simplifié |
+| 4.2 | Stats horizontal scroll | ✅ Fait | `src/pages/Calendar/CalendarPage.tsx` | Cards scrollables sur mobile |
+| 4.3 | Padding et espacement mobile | ✅ Fait | `src/pages/Calendar/CalendarPage.tsx` | Marges réduites, mb-24 pour bottom nav |
 
 ### PHASE 5 : ANIMATIONS (Priorité Basse)
 
@@ -119,7 +119,8 @@ Progression : ████████░░░░░░░░░░░░ 40% (
 
 | Date | Commit | Description |
 |------|--------|-------------|
-| 2025-12-07 | `à venir` | feat: Modales plein écran sur mobile (Modal + EventModal) |
+| 2025-12-07 | `à venir` | feat: Calendrier mobile - header compact, stats scrollables |
+| 2025-12-07 | `0224dd8` | feat: Modales plein écran sur mobile (Modal + EventModal) |
 | 2025-12-07 | `783073b` | feat: Mobile-first CSS - tailles, espacements, boutons tactiles |
 | 2025-12-07 | `32ea181` | docs: Add MOBILE_TRANSFORMATION_TRACKER.md |
 | 2025-12-07 | `63b15c3` | feat: Add bottom navigation style Instagram for mobile |

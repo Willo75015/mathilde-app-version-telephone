@@ -1228,28 +1228,35 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ navigate }) => {
     )
   }
 
+  // Détecter mobile
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768
+
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
-      {/* Header */}
-      <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <Calendar className="w-8 h-8 text-green-500" />
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Calendrier</h1>
-              <p className="text-gray-600">Gérez vos événements fleuriste</p>
+    <div className="min-h-screen bg-gray-50">
+      {/* Header - Mobile vs Desktop */}
+      <div className={`bg-white shadow-sm ${isMobile ? 'p-3' : 'rounded-lg p-6 mx-4 mt-4 mb-6'}`}>
+        {isMobile ? (
+          // HEADER MOBILE - Compact
+          <div className="space-y-3">
+            {/* Titre + Bouton créer */}
+            <div className="flex items-center justify-between">
+              <h1 className="text-lg font-bold text-gray-900">Calendrier</h1>
+              <button
+                onClick={handleCreateEvent}
+                className="bg-green-500 text-white p-2 rounded-lg"
+              >
+                <Plus className="w-5 h-5" />
+              </button>
             </div>
-          </div>
-          
-          <div className="flex items-center space-x-3">
-            {/* Toggle Vue */}
+
+            {/* Toggle Vue - Pleine largeur */}
             <div className="flex bg-gray-100 rounded-lg p-1">
               <button
                 onClick={() => setViewMode('calendrier')}
-                className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center space-x-2 ${
+                className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center space-x-1 ${
                   viewMode === 'calendrier'
                     ? 'bg-white text-gray-900 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-900'
+                    : 'text-gray-600'
                 }`}
               >
                 <Calendar className="w-4 h-4" />
@@ -1257,73 +1264,116 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ navigate }) => {
               </button>
               <button
                 onClick={() => setViewMode('kanban')}
-                className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center space-x-2 ${
+                className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center space-x-1 ${
                   viewMode === 'kanban'
                     ? 'bg-white text-gray-900 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-900'
+                    : 'text-gray-600'
                 }`}
               >
                 <KanbanIcon className="w-4 h-4" />
                 <span>Kanban</span>
               </button>
             </div>
-
-            <button
-              onClick={handleCreateEvent}
-              className="bg-green-500 hover:bg-green-600 text-white font-medium py-2 px-4 rounded-lg transition-colors flex items-center space-x-2"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Nouvel Événement</span>
-            </button>
           </div>
-        </div>
+        ) : (
+          // HEADER DESKTOP - Original
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <Calendar className="w-8 h-8 text-green-500" />
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">Calendrier</h1>
+                <p className="text-gray-600">Gérez vos événements fleuriste</p>
+              </div>
+            </div>
+
+            <div className="flex items-center space-x-3">
+              {/* Toggle Vue */}
+              <div className="flex bg-gray-100 rounded-lg p-1">
+                <button
+                  onClick={() => setViewMode('calendrier')}
+                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center space-x-2 ${
+                    viewMode === 'calendrier'
+                      ? 'bg-white text-gray-900 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  <Calendar className="w-4 h-4" />
+                  <span>Calendrier</span>
+                </button>
+                <button
+                  onClick={() => setViewMode('kanban')}
+                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center space-x-2 ${
+                    viewMode === 'kanban'
+                      ? 'bg-white text-gray-900 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  <KanbanIcon className="w-4 h-4" />
+                  <span>Kanban</span>
+                </button>
+              </div>
+
+              <button
+                onClick={handleCreateEvent}
+                className="bg-green-500 hover:bg-green-600 text-white font-medium py-2 px-4 rounded-lg transition-colors flex items-center space-x-2"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Nouvel Événement</span>
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* Statistiques */}
-      <div className="mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-blue-50 p-4 rounded-lg">
-          <div className="flex items-center">
-            <Calendar className="w-8 h-8 text-blue-500" />
-            <div className="ml-3">
-              <p className="text-sm font-medium text-blue-900">Total Événements</p>
-              <p className="text-2xl font-bold text-blue-600">{events.length}</p>
+      {/* Statistiques - Mobile horizontal scroll, Desktop grid */}
+      <div className={`${isMobile ? 'px-3 mb-4' : 'mx-4 mb-6'}`}>
+        <div className={`${isMobile ? 'flex space-x-3 overflow-x-auto pb-2 hide-scrollbar' : 'grid grid-cols-3 gap-4'}`}>
+          <div className={`bg-blue-50 p-3 rounded-lg ${isMobile ? 'flex-shrink-0 min-w-[140px]' : 'p-4'}`}>
+            <div className="flex items-center">
+              <Calendar className={`text-blue-500 ${isMobile ? 'w-6 h-6' : 'w-8 h-8'}`} />
+              <div className="ml-2">
+                <p className={`font-medium text-blue-900 ${isMobile ? 'text-xs' : 'text-sm'}`}>Total</p>
+                <p className={`font-bold text-blue-600 ${isMobile ? 'text-xl' : 'text-2xl'}`}>{events.length}</p>
+              </div>
             </div>
           </div>
-        </div>
-        
-        <div className="bg-green-50 p-4 rounded-lg">
-          <div className="flex items-center">
-            <Clock className="w-8 h-8 text-green-500" />
-            <div className="ml-3">
-              <p className="text-sm font-medium text-green-900">Ce Mois</p>
-              <p className="text-2xl font-bold text-green-600">
-                {events.filter(event => {
-                  const eventDate = new Date(event.date)
-                  return eventDate.getMonth() === currentDate.getMonth() && 
-                         eventDate.getFullYear() === currentDate.getFullYear()
-                }).length}
-              </p>
+
+          <div className={`bg-green-50 p-3 rounded-lg ${isMobile ? 'flex-shrink-0 min-w-[140px]' : 'p-4'}`}>
+            <div className="flex items-center">
+              <Clock className={`text-green-500 ${isMobile ? 'w-6 h-6' : 'w-8 h-8'}`} />
+              <div className="ml-2">
+                <p className={`font-medium text-green-900 ${isMobile ? 'text-xs' : 'text-sm'}`}>Ce mois</p>
+                <p className={`font-bold text-green-600 ${isMobile ? 'text-xl' : 'text-2xl'}`}>
+                  {events.filter(event => {
+                    const eventDate = new Date(event.date)
+                    return eventDate.getMonth() === currentDate.getMonth() &&
+                           eventDate.getFullYear() === currentDate.getFullYear()
+                  }).length}
+                </p>
+              </div>
             </div>
           </div>
-        </div>
-        
-        <div className="bg-purple-50 p-4 rounded-lg">
-          <div className="flex items-center">
-            <User className="w-8 h-8 text-purple-500" />
-            <div className="ml-3">
-              <p className="text-sm font-medium text-purple-900">Clients Actifs</p>
-              <p className="text-2xl font-bold text-purple-600">{state.clients?.length || 0}</p>
+
+          <div className={`bg-purple-50 p-3 rounded-lg ${isMobile ? 'flex-shrink-0 min-w-[140px]' : 'p-4'}`}>
+            <div className="flex items-center">
+              <User className={`text-purple-500 ${isMobile ? 'w-6 h-6' : 'w-8 h-8'}`} />
+              <div className="ml-2">
+                <p className={`font-medium text-purple-900 ${isMobile ? 'text-xs' : 'text-sm'}`}>Clients</p>
+                <p className={`font-bold text-purple-600 ${isMobile ? 'text-xl' : 'text-2xl'}`}>{state.clients?.length || 0}</p>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
       {/* Contenu principal selon la vue */}
-      {viewMode === 'calendrier' ? renderCalendarView() : renderKanbanView()}
+      <div className={isMobile ? 'px-3' : 'mx-4'}>
+        {viewMode === 'calendrier' ? renderCalendarView() : renderKanbanView()}
+      </div>
 
       {/* 🆕 SECTION ÉVÉNEMENTS ANNULÉS - Affiché seulement en mode calendrier */}
       {viewMode === 'calendrier' && (
-        <div className="mt-6 bg-white rounded-lg shadow-sm p-6">
+        <div className={`mt-4 bg-white rounded-lg shadow-sm ${isMobile ? 'mx-3 p-4 mb-24' : 'mx-4 p-6 mb-6'}`}>
           <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
             <X className="w-5 h-5 text-red-500 mr-2" />
             Événements annulés - {formatMonth(currentDate)}
