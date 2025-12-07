@@ -54,7 +54,7 @@ git push
 ## AVANCEMENT GLOBAL
 
 ```
-Progression : ██████░░░░░░░░░░░░░░ 30% (6/20 tâches)
+Progression : ████████░░░░░░░░░░░░ 40% (8/20 tâches)
 ```
 
 ---
@@ -82,12 +82,12 @@ Progression : ██████░░░░░░░░░░░░░░ 30% (
 
 ### PHASE 3 : MODALES (Priorité Haute)
 
-| # | Tâche | Statut | Fichiers à modifier | Notes |
-|---|-------|--------|---------------------|-------|
-| 3.1 | Modal plein écran sur mobile | 🔲 À faire | `src/components/ui/Modal.tsx` | `h-screen w-screen` sur mobile |
-| 3.2 | EventModal responsive | 🔲 À faire | `src/components/events/EventModal.tsx` | Scroll interne, boutons en bas |
-| 3.3 | CreateEventModal responsive | 🔲 À faire | `src/components/modals/CreateEventModal.tsx` | Formulaire vertical |
-| 3.4 | Fermeture par swipe down | 🔲 À faire | `src/components/ui/Modal.tsx` | Gesture de fermeture |
+| # | Tâche | Statut | Fichiers modifiés | Notes |
+|---|-------|--------|-------------------|-------|
+| 3.1 | Modal plein écran sur mobile | ✅ Fait | `src/components/ui/Modal.tsx` | Slide from bottom, header avec chevron retour |
+| 3.2 | EventModal responsive | ✅ Fait | `src/components/events/EventModal.tsx` | Plein écran, tabs mobile, padding adapté |
+| 3.3 | CreateEventModal responsive | ✅ Fait | Utilise EventModal | Hérité automatiquement |
+| 3.4 | Fermeture par swipe down | 🔲 À faire | `src/components/ui/Modal.tsx` | Gesture de fermeture (optionnel) |
 
 ### PHASE 4 : CALENDRIER (Priorité Moyenne)
 
@@ -119,7 +119,8 @@ Progression : ██████░░░░░░░░░░░░░░ 30% (
 
 | Date | Commit | Description |
 |------|--------|-------------|
-| 2025-12-07 | `à venir` | feat: Mobile-first tailles, espacements et CSS complet |
+| 2025-12-07 | `à venir` | feat: Modales plein écran sur mobile (Modal + EventModal) |
+| 2025-12-07 | `783073b` | feat: Mobile-first CSS - tailles, espacements, boutons tactiles |
 | 2025-12-07 | `32ea181` | docs: Add MOBILE_TRANSFORMATION_TRACKER.md |
 | 2025-12-07 | `63b15c3` | feat: Add bottom navigation style Instagram for mobile |
 | 2025-12-07 | `285e5fc` | Initial commit - copie de mathilde-app |

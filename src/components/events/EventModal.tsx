@@ -720,6 +720,9 @@ Mathilde Fleurs`
     return 'Disponible'
   }
 
+  // Détecter mobile
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -727,69 +730,127 @@ Mathilde Fleurs`
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
-          onClick={onClose}
+          className={`fixed inset-0 z-50 ${isMobile ? '' : 'bg-black bg-opacity-50 flex items-center justify-center p-4'}`}
+          onClick={isMobile ? undefined : onClose}
         >
           <motion.div
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.9, opacity: 0 }}
-            className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-6xl max-h-[85vh] overflow-hidden flex flex-col"
+            initial={isMobile ? { y: '100%' } : { scale: 0.9, opacity: 0 }}
+            animate={isMobile ? { y: 0 } : { scale: 1, opacity: 1 }}
+            exit={isMobile ? { y: '100%' } : { scale: 0.9, opacity: 0 }}
+            transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+            className={`bg-white dark:bg-gray-900 shadow-2xl flex flex-col ${
+              isMobile
+                ? 'fixed inset-0'
+                : 'rounded-xl w-full max-w-6xl max-h-[85vh] overflow-hidden'
+            }`}
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Header */}
-            <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-800">
-              <div className="flex items-center space-x-4">
-                <input
-                  type="text"
-                  value={editedEvent.title}
-                  onChange={(e) => updateEventField('title', e.target.value)}
-                  className="bg-transparent border-b-2 border-primary-500 focus:outline-none focus:border-primary-600 text-2xl font-bold text-gray-900 dark:text-white"
-                  placeholder={event ? "Nom de l'événement" : "Nom du nouvel événement"}
-                />
-                
-                {/* Bouton Traiter Urgent */}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="bg-orange-500 hover:bg-orange-600 text-white border-orange-500"
-                  leftIcon={<AlertCircle className="w-4 h-4" />}
-                >
-                  Traiter Urgent
-                </Button>
-              </div>
-              
-              <div className="flex items-center space-x-4">
-                {/* Switch entre Détails et Assignation */}
-                <div className="flex items-center space-x-2">
-                  <span className={`text-sm ${currentView === 'details' ? 'text-gray-900 dark:text-white font-medium' : 'text-gray-500'}`}>
-                    📅 Détails
-                  </span>
-                  <label className="relative inline-flex items-center cursor-pointer">
+            {/* Header - Mobile vs Desktop */}
+            <div className={`flex items-center justify-between border-b border-gray-200 dark:border-gray-700 ${
+              isMobile
+                ? 'px-4 py-3 bg-white dark:bg-gray-900 sticky top-0 z-10 safe-top'
+                : 'p-6 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-800'
+            }`}>
+              {isMobile ? (
+                // HEADER MOBILE
+                <>
+                  <button
+                    onClick={onClose}
+                    className="flex items-center justify-center w-10 h-10 -ml-2 text-gray-600 dark:text-gray-300"
+                  >
+                    <X className="w-6 h-6" />
+                  </button>
+                  <input
+                    type="text"
+                    value={editedEvent.title}
+                    onChange={(e) => updateEventField('title', e.target.value)}
+                    className="flex-1 bg-transparent text-center text-base font-semibold text-gray-900 dark:text-white focus:outline-none truncate mx-2"
+                    placeholder="Nom de l'événement"
+                  />
+                  <div className="w-10" />
+                </>
+              ) : (
+                // HEADER DESKTOP
+                <>
+                  <div className="flex items-center space-x-4">
                     <input
-                      type="checkbox"
-                      checked={currentView === 'assignment'}
-                      onChange={(e) => setCurrentView(e.target.checked ? 'assignment' : 'details')}
-                      className="sr-only peer"
+                      type="text"
+                      value={editedEvent.title}
+                      onChange={(e) => updateEventField('title', e.target.value)}
+                      className="bg-transparent border-b-2 border-primary-500 focus:outline-none focus:border-primary-600 text-2xl font-bold text-gray-900 dark:text-white"
+                      placeholder={event ? "Nom de l'événement" : "Nom du nouvel événement"}
                     />
-                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600"></div>
-                  </label>
-                  <span className={`text-sm ${currentView === 'assignment' ? 'text-gray-900 dark:text-white font-medium' : 'text-gray-500'}`}>
-                    👥 Assignation
-                  </span>
-                </div>
 
-                <Button
-                  variant="ghost"
-                  leftIcon={<X className="w-4 h-4" />}
-                  onClick={onClose}
-                />
-              </div>
+                    {/* Bouton Traiter Urgent */}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="bg-orange-500 hover:bg-orange-600 text-white border-orange-500"
+                      leftIcon={<AlertCircle className="w-4 h-4" />}
+                    >
+                      Traiter Urgent
+                    </Button>
+                  </div>
+
+                  <div className="flex items-center space-x-4">
+                    {/* Switch entre Détails et Assignation */}
+                    <div className="flex items-center space-x-2">
+                      <span className={`text-sm ${currentView === 'details' ? 'text-gray-900 dark:text-white font-medium' : 'text-gray-500'}`}>
+                        📅 Détails
+                      </span>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={currentView === 'assignment'}
+                          onChange={(e) => setCurrentView(e.target.checked ? 'assignment' : 'details')}
+                          className="sr-only peer"
+                        />
+                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600"></div>
+                      </label>
+                      <span className={`text-sm ${currentView === 'assignment' ? 'text-gray-900 dark:text-white font-medium' : 'text-gray-500'}`}>
+                        👥 Assignation
+                      </span>
+                    </div>
+
+                    <Button
+                      variant="ghost"
+                      leftIcon={<X className="w-4 h-4" />}
+                      onClick={onClose}
+                    />
+                  </div>
+                </>
+              )}
             </div>
 
-            <div ref={scrollContainerRef} className="flex-1 overflow-y-auto">
+            {/* Tabs Mobile - Switch entre Détails et Assignation */}
+            {isMobile && (
+              <div className="flex border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+                <button
+                  onClick={() => setCurrentView('details')}
+                  className={`flex-1 py-3 text-sm font-medium transition-colors ${
+                    currentView === 'details'
+                      ? 'text-green-600 border-b-2 border-green-600 bg-white dark:bg-gray-900'
+                      : 'text-gray-500'
+                  }`}
+                >
+                  📅 Détails
+                </button>
+                <button
+                  onClick={() => setCurrentView('assignment')}
+                  className={`flex-1 py-3 text-sm font-medium transition-colors ${
+                    currentView === 'assignment'
+                      ? 'text-green-600 border-b-2 border-green-600 bg-white dark:bg-gray-900'
+                      : 'text-gray-500'
+                  }`}
+                >
+                  👥 Équipe
+                </button>
+              </div>
+            )}
+
+            <div ref={scrollContainerRef} className={`flex-1 overflow-y-auto ${isMobile ? 'pb-24' : ''}`}>
               {/* CONTENU DYNAMIQUE SELON LA VUE */}
-              <div className="p-6">
+              <div className={isMobile ? 'p-4' : 'p-6'}>
                 {currentView === 'details' ? (
                   /* VUE DÉTAILS ÉVÉNEMENT */
                   <div className="max-w-4xl mx-auto space-y-6">
