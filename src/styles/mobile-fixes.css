@@ -80,6 +80,27 @@ button:active,
   transition: transform 0.1s ease;
 }
 
+/* Zones tactiles pour liens et éléments cliquables */
+a,
+[role="link"],
+.clickable {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  touch-action: manipulation;
+}
+
+/* Icône boutons (boutons avec uniquement une icône) */
+.icon-btn,
+button:has(> svg:only-child) {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
 /* Bouton principal */
 .btn-primary {
   background-color: #10b981;
@@ -139,6 +160,20 @@ label {
   border-radius: 1rem;
   background: white;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+/* Card cliquable - zone tactile optimisée */
+.card-clickable {
+  cursor: pointer;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.card-clickable:active {
+  transform: scale(0.98);
+  transition: transform 0.1s ease;
+  background-color: rgba(0, 0, 0, 0.02);
 }
 
 .container {
@@ -309,6 +344,29 @@ label {
 
 .hide-scrollbar::-webkit-scrollbar {
   display: none;
+}
+
+/* Scroll tactile optimisé */
+.scroll-touch {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  scroll-snap-type: x mandatory;
+}
+
+.scroll-touch > * {
+  scroll-snap-align: start;
+}
+
+/* Liste tactile - éléments avec espacement pour tap */
+.list-touch > * {
+  padding: 0.75rem 1rem;
+  margin-bottom: 0.25rem;
+  border-radius: 0.75rem;
+  touch-action: manipulation;
+}
+
+.list-touch > *:active {
+  background-color: rgba(0, 0, 0, 0.05);
 }
 
 /* ===========================================

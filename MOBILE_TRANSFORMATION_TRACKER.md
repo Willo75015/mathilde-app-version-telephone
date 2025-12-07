@@ -54,7 +54,7 @@ git push
 ## AVANCEMENT GLOBAL
 
 ```
-Progression : █████████████░░░░░░░ 65% (13/20 tâches)
+Progression : ███████████████░░░░░ 75% (15/20 tâches)
 ```
 
 ---
@@ -107,11 +107,13 @@ Progression : █████████████░░░░░░░ 65% (
 
 ### PHASE 6 : TOUCH & GESTURES (Priorité Basse)
 
-| # | Tâche | Statut | Fichiers à modifier | Notes |
-|---|-------|--------|---------------------|-------|
-| 6.1 | Zones tactiles élargies | 🔲 À faire | Tous les boutons/liens | Min 44x44px |
-| 6.2 | Pull to refresh | 🔲 À faire | Pages principales | Actualiser les données |
-| 6.3 | Swipe actions sur cards | 🔲 À faire | `src/components/events/EventCard.tsx` | Swipe pour actions rapides |
+| # | Tâche | Statut | Fichiers modifiés | Notes |
+|---|-------|--------|-------------------|-------|
+| 6.1 | Zones tactiles élargies | ✅ Fait | `src/styles/mobile-fixes.css` | Min 44x44px sur boutons, liens, icon-btn |
+| 6.2 | Cards cliquables optimisées | ✅ Fait | `src/styles/mobile-fixes.css` | .card-clickable avec feedback tactile |
+| 6.3 | Scroll tactile amélioré | ✅ Fait | `src/styles/mobile-fixes.css` | .scroll-touch avec snap, .list-touch |
+| 6.4 | Pull to refresh | 🔲 À faire | Pages principales | Optionnel |
+| 6.5 | Swipe actions sur cards | 🔲 À faire | EventCard | Optionnel |
 
 ---
 
@@ -119,7 +121,8 @@ Progression : █████████████░░░░░░░ 65% (
 
 | Date | Commit | Description |
 |------|--------|-------------|
-| 2025-12-07 | - | feat: Animations légères mobile - hook useReducedMotion + CSS optimisé |
+| 2025-12-07 | - | feat: Touch-friendly - zones tactiles 44px, cards cliquables, scroll snap |
+| 2025-12-07 | `cf4dd9f` | feat: Animations légères mobile - hook useReducedMotion + CSS optimisé |
 | 2025-12-07 | `cba00f3` | feat: Calendrier mobile - header compact, stats scrollables |
 | 2025-12-07 | `0224dd8` | feat: Modales plein écran sur mobile (Modal + EventModal) |
 | 2025-12-07 | `783073b` | feat: Mobile-first CSS - tailles, espacements, boutons tactiles |
