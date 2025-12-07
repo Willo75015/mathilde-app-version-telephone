@@ -54,7 +54,7 @@ git push
 ## AVANCEMENT GLOBAL
 
 ```
-Progression : ████░░░░░░░░░░░░░░░░ 20% (2/10 tâches majeures)
+Progression : ██████░░░░░░░░░░░░░░ 30% (6/20 tâches)
 ```
 
 ---
@@ -72,13 +72,13 @@ Progression : ████░░░░░░░░░░░░░░░░ 20% (
 
 ### PHASE 2 : TAILLES & ESPACEMENTS (Priorité Haute)
 
-| # | Tâche | Statut | Fichiers à modifier | Notes |
-|---|-------|--------|---------------------|-------|
-| 2.1 | Home page mobile-first | 🔄 En cours | `src/pages/Home.tsx` | Titre réduit, bouton pleine largeur, sections sans animations lourdes |
-| 2.2 | Tailles de texte adaptées | 🔲 À faire | `src/styles/mobile-fixes.css` | h1: 1.25rem, h2: 1.125rem sur mobile |
-| 2.3 | Boutons tactiles (min 44px) | 🔲 À faire | `src/components/ui/Button.tsx` | Suivre guidelines Apple |
-| 2.4 | Espacement réduit sur mobile | 🔲 À faire | Tous les composants | `space-y-4` au lieu de `space-y-8` |
-| 2.5 | Cards compactes | 🔲 À faire | `src/components/ui/Card.tsx` | Padding réduit, coins arrondis |
+| # | Tâche | Statut | Fichiers modifiés | Notes |
+|---|-------|--------|-------------------|-------|
+| 2.1 | Home page mobile-first | ✅ Fait | `src/pages/Home.tsx` | Titre réduit, bouton pleine largeur, sections simplifiées |
+| 2.2 | Tailles de texte adaptées | ✅ Fait | `src/styles/mobile-fixes.css` | h1: 1.25rem, h2: 1.125rem, inputs 16px (anti-zoom iOS) |
+| 2.3 | Boutons tactiles (min 44px) | ✅ Fait | `src/styles/mobile-fixes.css` | min-height: 44px, touch-action: manipulation |
+| 2.4 | Espacement réduit sur mobile | ✅ Fait | `src/styles/mobile-fixes.css` | Classes utilitaires .space-y-mobile, .gap-mobile |
+| 2.5 | Cards compactes | ✅ Fait | `src/styles/mobile-fixes.css` | padding: 1rem, border-radius: 1rem |
 
 ### PHASE 3 : MODALES (Priorité Haute)
 
@@ -119,6 +119,8 @@ Progression : ████░░░░░░░░░░░░░░░░ 20% (
 
 | Date | Commit | Description |
 |------|--------|-------------|
+| 2025-12-07 | `à venir` | feat: Mobile-first tailles, espacements et CSS complet |
+| 2025-12-07 | `32ea181` | docs: Add MOBILE_TRANSFORMATION_TRACKER.md |
 | 2025-12-07 | `63b15c3` | feat: Add bottom navigation style Instagram for mobile |
 | 2025-12-07 | `285e5fc` | Initial commit - copie de mathilde-app |
 

@@ -1,78 +1,183 @@
 /* Mobile-First Responsive Fixes pour iPhone */
+/* Dernière mise à jour : 7 décembre 2025 */
 
-/* Base mobile (0-640px) */
+/* ===========================================
+   BASE MOBILE (0-767px)
+   =========================================== */
+
 * {
   box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent; /* Supprime le highlight bleu sur tap */
 }
 
 html {
-  font-size: 14px; /* Plus petit sur mobile */
+  font-size: 16px; /* Base pour les rem */
+  -webkit-text-size-adjust: 100%; /* Empêche le redimensionnement auto sur iOS */
 }
 
 body {
-  font-size: 14px;
+  font-size: 1rem;
   line-height: 1.5;
-  overflow-x: hidden; /* Empêche le débordement horizontal */
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch; /* Smooth scroll sur iOS */
 }
 
-/* Containers responsive */
+/* ===========================================
+   TYPOGRAPHY MOBILE
+   =========================================== */
+
+h1 {
+  font-size: 1.25rem; /* 20px */
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+h2 {
+  font-size: 1.125rem; /* 18px */
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+h3 {
+  font-size: 1rem; /* 16px */
+  font-weight: 600;
+}
+
+h4, h5, h6 {
+  font-size: 0.875rem; /* 14px */
+  font-weight: 500;
+}
+
+p, span, label {
+  font-size: 0.875rem; /* 14px */
+}
+
+small, .text-xs {
+  font-size: 0.75rem; /* 12px */
+}
+
+/* ===========================================
+   BOUTONS TACTILES
+   =========================================== */
+
+button,
+[role="button"],
+.btn {
+  min-height: 44px; /* Apple Human Interface Guidelines */
+  min-width: 44px;
+  padding: 0.75rem 1rem;
+  border-radius: 0.75rem;
+  font-size: 0.9375rem; /* 15px */
+  font-weight: 500;
+  cursor: pointer;
+  touch-action: manipulation; /* Évite le délai de 300ms */
+  user-select: none;
+}
+
+button:active,
+[role="button"]:active {
+  transform: scale(0.97);
+  transition: transform 0.1s ease;
+}
+
+/* Bouton principal */
+.btn-primary {
+  background-color: #10b981;
+  color: white;
+}
+
+.btn-primary:active {
+  background-color: #059669;
+}
+
+/* ===========================================
+   INPUTS & FORMULAIRES
+   =========================================== */
+
+input,
+textarea,
+select {
+  width: 100%;
+  min-height: 48px; /* Plus grand que 44px pour le confort */
+  font-size: 16px !important; /* CRITIQUE: Empêche le zoom sur iOS */
+  padding: 0.875rem 1rem;
+  border-radius: 0.75rem;
+  border: 1px solid #e5e7eb;
+  background-color: #fff;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  border-color: #10b981;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+}
+
+textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+
+/* Labels */
+label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: #374151;
+}
+
+/* ===========================================
+   CARDS & CONTAINERS
+   =========================================== */
+
+.card {
+  padding: 1rem;
+  margin-bottom: 0.75rem;
+  border-radius: 1rem;
+  background: white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
 .container {
   width: 100%;
   max-width: 100vw;
-  margin: 0 auto;
-  padding: 0 0.75rem; /* 12px */
+  padding: 0 1rem;
 }
 
-/* Typography responsive */
-h1 { font-size: 1.5rem; } /* 24px */
-h2 { font-size: 1.25rem; } /* 20px */
-h3 { font-size: 1.125rem; } /* 18px */
-h4 { font-size: 1rem; } /* 16px */
-h5 { font-size: 0.875rem; } /* 14px */
-h6 { font-size: 0.75rem; } /* 12px */
+/* ===========================================
+   ESPACEMENT MOBILE
+   =========================================== */
 
-/* Boutons responsive */
-button {
-  min-height: 44px; /* Apple recommandation */
-  padding: 0.5rem 1rem;
-  border-radius: 0.5rem;
+.space-y-mobile > * + * {
+  margin-top: 0.75rem;
 }
 
-/* Inputs responsive */
-input, textarea, select {
-  width: 100%;
-  min-height: 44px;
-  font-size: 16px; /* Empêche le zoom sur iOS */
-  padding: 0.75rem;
-  border-radius: 0.5rem;
+.gap-mobile {
+  gap: 0.75rem;
 }
 
-/* Cards et composants */
-.card {
+.p-mobile {
   padding: 1rem;
-  margin-bottom: 1rem;
-  border-radius: 0.75rem;
 }
 
-/* Tables responsive */
-table {
-  width: 100%;
-  display: block;
-  overflow-x: auto;
-  white-space: nowrap;
+.py-mobile {
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
 }
 
-thead, tbody, th, td, tr {
-  display: block;
+.px-mobile {
+  padding-left: 1rem;
+  padding-right: 1rem;
 }
 
-th, td {
-  padding: 0.5rem;
-  text-align: left;
-}
+/* ===========================================
+   NAVIGATION BOTTOM (Style Instagram)
+   =========================================== */
 
-/* Navigation mobile */
-.mobile-nav {
+.bottom-nav {
   position: fixed;
   bottom: 0;
   left: 0;
@@ -80,118 +185,240 @@ th, td {
   z-index: 50;
   background: white;
   border-top: 1px solid #e5e7eb;
-  padding: 0.5rem;
+  padding-bottom: env(safe-area-inset-bottom, 0);
 }
 
-/* Sidebar mobile */
-.sidebar-mobile {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 280px;
-  height: 100vh;
-  z-index: 40;
-  transform: translateX(-100%);
-  transition: transform 0.3s ease;
-}
-
-.sidebar-mobile.open {
-  transform: translateX(0);
-}
-
-/* Modal responsive */
-.modal {
-  padding: 1rem;
-  max-height: 90vh;
-  overflow-y: auto;
-}
-
-/* Grid responsive */
-.grid {
-  display: grid;
-  gap: 1rem;
-  grid-template-columns: 1fr;
-}
-
-/* Flex responsive */
-.flex-mobile {
+.bottom-nav-item {
+  flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem;
+  min-height: 56px;
+  color: #6b7280;
+  transition: color 0.15s ease;
 }
 
-/* Spacing mobile */
-.space-y-mobile > * + * {
-  margin-top: 0.5rem;
+.bottom-nav-item.active {
+  color: #10b981;
 }
 
-/* Safe area pour les iPhones avec encoche */
+.bottom-nav-item:active {
+  transform: scale(0.95);
+}
+
+/* ===========================================
+   SAFE AREAS (iPhone X+)
+   =========================================== */
+
 .safe-top {
-  padding-top: env(safe-area-inset-top, 20px);
+  padding-top: env(safe-area-inset-top, 0);
 }
 
 .safe-bottom {
-  padding-bottom: env(safe-area-inset-bottom, 20px);
+  padding-bottom: env(safe-area-inset-bottom, 0);
 }
 
-/* Tablet (641px - 1024px) */
-@media (min-width: 641px) {
-  html { font-size: 15px; }
-  .container { padding: 0 1.5rem; }
-  h1 { font-size: 2rem; }
-  h2 { font-size: 1.5rem; }
-  .grid { grid-template-columns: repeat(2, 1fr); }
-  .flex-mobile { flex-direction: row; }
+.safe-left {
+  padding-left: env(safe-area-inset-left, 0);
 }
 
-/* Desktop (1025px+) */
-@media (min-width: 1025px) {
-  html { font-size: 16px; }
-  .container { 
-    padding: 0 2rem;
-    max-width: 1280px;
-  }
-  h1 { font-size: 2.25rem; }
-  h2 { font-size: 1.875rem; }
-  .grid { grid-template-columns: repeat(3, 1fr); }
-  
-  /* Desktop-only styles */
-  .mobile-nav { display: none; }
-  .sidebar-mobile {
-    position: relative;
-    transform: translateX(0);
-    width: 240px;
-  }
+.safe-right {
+  padding-right: env(safe-area-inset-right, 0);
 }
 
-/* Utilitaires de débordement */
+/* Padding pour la bottom nav */
+.pb-bottom-nav {
+  padding-bottom: calc(4rem + env(safe-area-inset-bottom, 0));
+}
+
+/* ===========================================
+   MODALES MOBILE
+   =========================================== */
+
+.modal-mobile {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: white;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.modal-header-mobile {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: white;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.modal-content-mobile {
+  padding: 1rem;
+  padding-bottom: calc(5rem + env(safe-area-inset-bottom, 0));
+}
+
+.modal-footer-mobile {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: white;
+  border-top: 1px solid #e5e7eb;
+  padding: 1rem;
+  padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0));
+}
+
+/* ===========================================
+   UTILITAIRES
+   =========================================== */
+
 .text-ellipsis {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.break-words {
-  word-break: break-word;
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
-/* Scroll mobile amélioré */
+.break-words {
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
 .scroll-smooth {
   scroll-behavior: smooth;
   -webkit-overflow-scrolling: touch;
 }
 
-/* Focus mobile */
-.focus-mobile:focus {
-  outline: 2px solid #10b981;
-  outline-offset: 2px;
-  border-radius: 0.5rem;
+/* Hide scrollbar but keep functionality */
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
-/* Dark mode responsive */
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* ===========================================
+   ANIMATIONS LÉGÈRES (Performance mobile)
+   =========================================== */
+
+.transition-fast {
+  transition: all 0.15s ease;
+}
+
+.transition-normal {
+  transition: all 0.2s ease;
+}
+
+/* Désactiver les animations si l'utilisateur préfère */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ===========================================
+   DARK MODE
+   =========================================== */
+
 @media (prefers-color-scheme: dark) {
   .auto-dark {
     background-color: #1f2937;
     color: #f9fafb;
+  }
+
+  .auto-dark .card {
+    background-color: #374151;
+    border-color: #4b5563;
+  }
+
+  .auto-dark input,
+  .auto-dark textarea,
+  .auto-dark select {
+    background-color: #374151;
+    border-color: #4b5563;
+    color: #f9fafb;
+  }
+}
+
+/* ===========================================
+   TABLET (768px+)
+   =========================================== */
+
+@media (min-width: 768px) {
+  html {
+    font-size: 16px;
+  }
+
+  h1 { font-size: 1.5rem; }
+  h2 { font-size: 1.25rem; }
+  h3 { font-size: 1.125rem; }
+
+  .container {
+    padding: 0 1.5rem;
+  }
+
+  .card {
+    padding: 1.25rem;
+  }
+
+  /* Masquer bottom nav sur tablet+ */
+  .bottom-nav {
+    display: none;
+  }
+
+  .pb-bottom-nav {
+    padding-bottom: 0;
+  }
+}
+
+/* ===========================================
+   DESKTOP (1024px+)
+   =========================================== */
+
+@media (min-width: 1024px) {
+  h1 { font-size: 1.875rem; }
+  h2 { font-size: 1.5rem; }
+  h3 { font-size: 1.25rem; }
+
+  .container {
+    padding: 0 2rem;
+    max-width: 1280px;
+    margin: 0 auto;
+  }
+
+  .card {
+    padding: 1.5rem;
+  }
+
+  /* Modales centrées sur desktop */
+  .modal-mobile {
+    position: fixed;
+    inset: auto;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 90%;
+    max-width: 600px;
+    max-height: 90vh;
+    border-radius: 1rem;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
   }
 }
