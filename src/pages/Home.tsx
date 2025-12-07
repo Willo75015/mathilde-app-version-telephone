@@ -220,62 +220,49 @@ const Home: React.FC<HomeProps> = ({ navigate }) => {
   }
 
   return (
-    <motion.div
-      variants={containerVariants}
-      initial="hidden"
-      animate="visible"
-      className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300"
-    >
-      <div className="max-w-7xl mx-auto p-6 space-y-8">
-        {/* Header */}
-        <motion.section 
-          variants={sectionVariants}
-          className="flex flex-col lg:flex-row lg:items-center lg:justify-between"
-        >
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-              🌸 Dashboard Mathilde Fleurs
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="space-y-4 md:space-y-6">
+        {/* Header Mobile-First */}
+        <section className="flex flex-col gap-3">
+          {/* Titre + Sync indicator */}
+          <div className="flex items-center justify-between">
+            <h1 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white">
+              Dashboard
             </h1>
-            <p className="text-gray-600 dark:text-gray-400 mt-1">
-              Gestion intelligente de vos événements par priorité
-            </p>
-          </div>
-          <div className="mt-4 lg:mt-0 flex items-center gap-3">
             {/* Indicateur de synchronisation */}
             {isSupabaseEnabled() && (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center">
                 {isSupabaseMode ? (
-                  <span className="flex items-center gap-1 px-3 py-1.5 bg-green-100 text-green-700 rounded-full text-sm">
-                    <Cloud className="w-4 h-4" />
-                    <span className="hidden sm:inline">Sync Cloud</span>
+                  <span className="flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs">
+                    <Cloud className="w-3 h-3" />
+                    <span>Sync</span>
                   </span>
                 ) : (
                   <button
                     onClick={handleMigrateToCloud}
                     disabled={isMigrating}
-                    className="flex items-center gap-1 px-3 py-1.5 bg-yellow-100 text-yellow-700 hover:bg-yellow-200 rounded-full text-sm transition-colors"
+                    className="flex items-center gap-1 px-2 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs"
                   >
                     {isMigrating ? (
-                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      <RefreshCw className="w-3 h-3 animate-spin" />
                     ) : (
-                      <CloudOff className="w-4 h-4" />
+                      <CloudOff className="w-3 h-3" />
                     )}
-                    <span className="hidden sm:inline">
-                      {isMigrating ? 'Migration...' : 'Migrer vers Cloud'}
-                    </span>
                   </button>
                 )}
               </div>
             )}
-            <button
-              className="bg-green-500 hover:bg-green-600 text-white font-medium py-2 px-4 rounded-lg flex items-center space-x-2 transition-colors"
-              onClick={handleCreateEvent}
-            >
-              <Plus className="w-4 h-4" />
-              <span>Créer un nouvel événement</span>
-            </button>
           </div>
-        </motion.section>
+
+          {/* Bouton créer - pleine largeur sur mobile */}
+          <button
+            className="w-full bg-green-500 hover:bg-green-600 active:bg-green-700 text-white font-medium py-3 px-4 rounded-xl flex items-center justify-center space-x-2 transition-colors text-base"
+            onClick={handleCreateEvent}
+          >
+            <Plus className="w-5 h-5" />
+            <span>Nouvel événement</span>
+          </button>
+        </section>
 
         {/* Message de migration */}
         {migrationMessage && (
@@ -292,9 +279,9 @@ const Home: React.FC<HomeProps> = ({ navigate }) => {
           </motion.div>
         )}
 
-        {/* RAPPELS & ALERTES - Nouveau système de notifications */}
+        {/* RAPPELS & ALERTES */}
         {remindersData.reminders.length > 0 && (
-          <motion.section variants={sectionVariants}>
+          <section>
             <RemindersSection
               reminders={remindersData.reminders}
               urgentCount={remindersData.urgentCount}
@@ -304,12 +291,12 @@ const Home: React.FC<HomeProps> = ({ navigate }) => {
               onMarkAsRead={remindersData.markAsRead}
               navigate={navigate}
             />
-          </motion.section>
+          </section>
         )}
 
-        {/* NIVEAU 1 - URGENCE OPÉRATIONNELLE (40%) */}
-        <motion.section variants={sectionVariants}>
-          <UrgentEventsSection 
+        {/* NIVEAU 1 - URGENCE OPÉRATIONNELLE */}
+        <section>
+          <UrgentEventsSection
             urgentEvents={urgentEvents}
             totalUrgentCount={totalUrgentCount}
             showMoreUrgent={showMoreUrgent}
@@ -320,44 +307,35 @@ const Home: React.FC<HomeProps> = ({ navigate }) => {
             onCancelEvent={handleCancelEvent}
             navigate={navigate}
           />
-        </motion.section>
+        </section>
 
-        {/* NIVEAU 2 - CASH FLOW (25%) */}
-        <motion.section 
-          variants={sectionVariants}
-          transition={{ delay: 0.2 }}
-        >
-          <InvoicingSection 
+        {/* NIVEAU 2 - CASH FLOW */}
+        <section>
+          <InvoicingSection
             eventsToInvoice={eventsToInvoice}
             allEvents={state.events}
             navigate={navigate}
           />
-        </motion.section>
+        </section>
 
-        {/* NIVEAU 3 - PLANIFICATION STRATÉGIQUE (30%) */}
-        <motion.section 
-          variants={sectionVariants}
-          transition={{ delay: 0.4 }}
-        >
-          <StrategicPlanningSection 
+        {/* NIVEAU 3 - PLANIFICATION STRATÉGIQUE */}
+        <section>
+          <StrategicPlanningSection
             futureEvents={futureEvents}
             navigate={navigate}
             onEventEdit={handleEventEditSelect}
           />
-        </motion.section>
+        </section>
 
-        {/* NIVEAU 4 - MÉTRIQUES BUSINESS (5%) */}
-        <motion.section 
-          variants={sectionVariants}
-          transition={{ delay: 0.6 }}
-        >
-          <BusinessMetricsSection 
+        {/* NIVEAU 4 - MÉTRIQUES BUSINESS */}
+        <section>
+          <BusinessMetricsSection
             events={state.events}
             clients={state.clients}
             futureEvents={futureEvents}
             eventsToInvoice={eventsToInvoice}
           />
-        </motion.section>
+        </section>
       </div>
 
       {/* Modales */}
@@ -393,7 +371,7 @@ const Home: React.FC<HomeProps> = ({ navigate }) => {
         onClose={() => setIsCreateEventModalOpen(false)}
         onEventCreated={handleEventCreated}
       />
-    </motion.div>
+    </div>
   )
 }
 
