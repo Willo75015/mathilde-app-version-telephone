@@ -848,7 +848,7 @@ Mathilde Fleurs`
               </div>
             )}
 
-            <div ref={scrollContainerRef} className={`flex-1 overflow-y-auto ${isMobile ? 'pb-16' : ''}`}>
+            <div ref={scrollContainerRef} className={`flex-1 overflow-y-auto ${isMobile ? 'pb-24' : ''}`}>
               {/* CONTENU DYNAMIQUE SELON LA VUE */}
               <div className={isMobile ? 'p-2' : 'p-6'}>
                 {currentView === 'details' ? (
@@ -974,7 +974,7 @@ Mathilde Fleurs`
                         CA généré *
                       </label>
                       <div className="relative">
-                        <DollarSign className="absolute left-3 top-2.5 w-4 h-4 text-green-500" />
+                        <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-green-500 flex-shrink-0" />
                         <input
                           type="number"
                           value={editedEvent.budget || ''}
@@ -984,7 +984,7 @@ Mathilde Fleurs`
                           min="0"
                           step="0.01"
                         />
-                        <span className="absolute right-3 top-2.5 text-sm text-gray-500">€</span>
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-500">€</span>
                       </div>
                     </div>
 
@@ -1366,11 +1366,12 @@ Mathilde Fleurs`
             </div>
 
             {/* Footer avec actions - Adapté mobile */}
-            <div className={`border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 ${
+            <div className={`border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg ${
               isMobile
-                ? 'fixed bottom-0 left-0 right-0 p-3 pb-safe z-20'
+                ? 'fixed bottom-0 left-0 right-0 p-4 z-50'
                 : 'flex items-center justify-between p-6'
-            }`}>
+            }`}
+            style={isMobile ? { paddingBottom: 'calc(1rem + env(safe-area-inset-bottom, 16px))' } : undefined}>
               {/* Stats fleuristes - masqué sur mobile pour gagner de l'espace */}
               {!isMobile && (
                 <div className="text-sm text-gray-600 dark:text-gray-400">
