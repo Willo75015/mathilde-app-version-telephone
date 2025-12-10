@@ -600,12 +600,30 @@ h1, h2, h3, h4, h5, h6 {
   .space-x-3 > * + * { margin-left: 0.5rem !important; }
   .space-x-4 > * + * { margin-left: 0.625rem !important; }
 
-  /* Conteneurs d'icônes ronds/carrés */
-  .w-8.h-8, .w-10.h-10, .w-12.h-12 {
+  /* Conteneurs d'icônes ronds/carrés - TOUS */
+  .w-6.h-6, .w-8.h-8, .w-10.h-10, .w-12.h-12, .w-16.h-16 {
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
     flex-shrink: 0 !important;
+  }
+
+  /* Avatars ronds - toujours flex-shrink-0 */
+  .rounded-full.flex,
+  [class*="rounded-full"][class*="flex"] {
+    flex-shrink: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  /* Initiales dans avatars */
+  .rounded-full span,
+  .rounded-full .text-white,
+  .rounded-full .text-gray-600 {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
   }
 
   /* Badges avec icônes */
@@ -646,6 +664,59 @@ h1, h2, h3, h4, h5, h6 {
   [class*="rounded-xl"] svg,
   [class*="rounded-lg"] svg {
     flex-shrink: 0 !important;
+  }
+
+  /* ===========================================
+     FIX FLEX CONTAINERS - ALIGNEMENT VERTICAL
+     =========================================== */
+
+  /* Tous les flex avec space-x doivent avoir items-center */
+  .flex.space-x-1,
+  .flex.space-x-2,
+  .flex.space-x-3,
+  .flex.space-x-4,
+  .flex.gap-1,
+  .flex.gap-2,
+  .flex.gap-3,
+  .flex.gap-4 {
+    align-items: center !important;
+  }
+
+  /* Flex justify-between doit aussi avoir items-center */
+  .flex.justify-between {
+    align-items: center !important;
+  }
+
+  /* Fix items-start qui casse l'alignement */
+  .flex.items-start svg {
+    align-self: center !important;
+  }
+
+  /* ===========================================
+     ICÔNES MONÉTAIRES (Euro, DollarSign)
+     =========================================== */
+
+  /* Toutes les icônes de type monétaire */
+  svg[class*="text-green"],
+  svg[class*="text-emerald"],
+  svg[class*="mr-2"],
+  svg[class*="mr-3"] {
+    flex-shrink: 0 !important;
+    align-self: center !important;
+  }
+
+  /* Fix spécifique pour les lignes de paiement */
+  .flex.items-center svg[class*="mr-"] {
+    flex-shrink: 0 !important;
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+  }
+
+  /* Textes à côté des icônes - alignement */
+  .flex.items-center > span,
+  .flex.items-center > p,
+  .flex.items-center > div {
+    align-self: center !important;
   }
 
   /* Rounded - réduire */
