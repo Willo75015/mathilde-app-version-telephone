@@ -848,7 +848,7 @@ Mathilde Fleurs`
               </div>
             )}
 
-            <div ref={scrollContainerRef} className={`flex-1 overflow-y-auto ${isMobile ? 'pb-24' : ''}`}>
+            <div ref={scrollContainerRef} className={`flex-1 overflow-y-auto ${isMobile ? 'pb-4' : ''}`}>
               {/* CONTENU DYNAMIQUE SELON LA VUE */}
               <div className={isMobile ? 'p-2' : 'p-6'}>
                 {currentView === 'details' ? (
@@ -1366,12 +1366,11 @@ Mathilde Fleurs`
             </div>
 
             {/* Footer avec actions - Adapté mobile */}
-            <div className={`border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg ${
+            <div className={`border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] flex-shrink-0 ${
               isMobile
-                ? 'fixed bottom-0 left-0 right-0 p-4 z-50'
+                ? 'p-4 pb-6'
                 : 'flex items-center justify-between p-6'
-            }`}
-            style={isMobile ? { paddingBottom: 'calc(1rem + env(safe-area-inset-bottom, 16px))' } : undefined}>
+            }`}>
               {/* Stats fleuristes - masqué sur mobile pour gagner de l'espace */}
               {!isMobile && (
                 <div className="text-sm text-gray-600 dark:text-gray-400">
