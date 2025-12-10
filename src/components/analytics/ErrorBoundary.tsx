@@ -75,12 +75,12 @@ class ErrorBoundary extends Component<Props, State> {
               L'équipe technique a été notifiée.
             </p>
             
-            {import.meta.env.DEV && this.state.error && (
-              <details className="mb-6 text-left">
+            {this.state.error && (
+              <details className="mb-6 text-left" open>
                 <summary className="cursor-pointer text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Détails de l'erreur (développement)
+                  Détails de l'erreur
                 </summary>
-                <pre className="text-xs bg-gray-100 dark:bg-gray-700 p-3 rounded overflow-auto">
+                <pre className="text-xs bg-gray-100 dark:bg-gray-700 p-3 rounded overflow-auto max-h-40">
                   {this.state.error.toString()}
                   {this.state.errorInfo?.componentStack}
                 </pre>
