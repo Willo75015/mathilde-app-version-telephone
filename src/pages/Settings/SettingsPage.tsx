@@ -193,18 +193,33 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ navigate, onSignOut }) => {
     >
       {/* Header */}
       <motion.div variants={itemVariants}>
-        <div className="flex items-center space-x-4">
-          <div className="w-12 h-12 bg-primary-500 rounded-xl flex items-center justify-center">
-            <Settings className="w-6 h-6 text-white" />
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <div className="w-12 h-12 bg-primary-500 rounded-xl flex items-center justify-center">
+              <Settings className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white">
+                Paramètres
+              </h1>
+              <p className="text-gray-600 dark:text-gray-400 mt-1">
+                Configurez votre application selon vos préférences
+              </p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white">
-              Paramètres
-            </h1>
-            <p className="text-gray-600 dark:text-gray-400 mt-1">
-              Configurez votre application selon vos préférences
-            </p>
-          </div>
+
+          {/* Bouton Déconnexion visible */}
+          {isSupabaseEnabled() && onSignOut && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onSignOut}
+              leftIcon={<LogOut className="w-4 h-4" />}
+              className="text-red-600 border-red-300 hover:bg-red-50"
+            >
+              Déconnexion
+            </Button>
+          )}
         </div>
       </motion.div>
       
