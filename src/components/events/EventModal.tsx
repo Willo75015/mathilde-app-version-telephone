@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react'
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   X, DollarSign, Phone,
@@ -720,8 +720,15 @@ Mathilde Fleurs`
     return 'Disponible'
   }
 
-  // Détecter mobile
-  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768
+  // Détecter mobile avec hook réactif
+  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' && window.innerWidth < 768)
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768)
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
 
   return (
     <AnimatePresence>
