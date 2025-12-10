@@ -134,7 +134,13 @@ export const useModalEventSync = (eventId: string | null, modalName: string) => 
     latestEvent,
     isEventOutdated: useCallback((currentEvent: Event | null) => {
       if (!currentEvent || !latestEvent) return false
-      return currentEvent.updatedAt < latestEvent.updatedAt
+      try {
+        const currentDate = new Date(currentEvent.updatedAt).getTime()
+        const latestDate = new Date(latestEvent.updatedAt).getTime()
+        return currentDate < latestDate
+      } catch {
+        return false
+      }
     }, [latestEvent])
   }
 }

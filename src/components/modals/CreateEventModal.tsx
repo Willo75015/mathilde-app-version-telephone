@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react'
+import React, { useCallback, useMemo } from 'react'
 import EventModal from '../events/EventModal'
 import { EventStatus } from '@/types'
 
@@ -18,8 +18,9 @@ const CreateEventModal: React.FC<CreateEventModalProps> = ({
   onClose,
   onEventCreated
 }) => {
-  // Création d'un événement vide
-  const getNewEvent = useCallback(() => {
+  // Création d'un événement vide - useMemo pour éviter recréation à chaque render
+  const newEvent = useMemo(() => {
+    if (!isOpen) return null
     return {
       id: `event-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       title: '',
@@ -36,7 +37,7 @@ const CreateEventModal: React.FC<CreateEventModalProps> = ({
       createdAt: new Date(),
       updatedAt: new Date()
     }
-  }, [])
+  }, [isOpen])
 
   const handleSave = useCallback((event: any) => {
     console.log('✅ Événement créé depuis CreateEventModal:', event.title)
@@ -46,12 +47,12 @@ const CreateEventModal: React.FC<CreateEventModalProps> = ({
     onClose()
   }, [onEventCreated, onClose])
 
-  if (!isOpen) return null
+  if (!isOpen || !newEvent) return null
 
   // Ouvre directement EventModal pour créer un événement
   return (
     <EventModal
-      event={getNewEvent()}
+      event={newEvent}
       isOpen={true}
       onClose={onClose}
       onEdit={handleSave}
