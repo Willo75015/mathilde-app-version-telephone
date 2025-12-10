@@ -64,6 +64,9 @@ export const usePWAInstall = () => {
   }
 }
 
+// Alias pour compatibilité
+export const usePWA = usePWAInstall
+
 // Hook pour détecter le statut de connexion
 export const useOnlineStatus = () => {
   const [isOnline, setIsOnline] = useState(navigator.onLine)

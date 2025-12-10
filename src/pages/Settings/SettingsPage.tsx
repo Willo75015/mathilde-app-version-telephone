@@ -3,7 +3,7 @@ import { motion } from 'framer-motion'
 import {
   Settings, User, Shield, Bell, Palette,
   Globe, Database, Download, Upload, RefreshCw,
-  Cloud, CloudOff, Trash2, AlertTriangle
+  Cloud, CloudOff, Trash2, AlertTriangle, LogOut
 } from 'lucide-react'
 import { useTheme } from '@/contexts/ThemeContext'
 import { usePWA } from '@/hooks/usePWA'
@@ -15,7 +15,12 @@ import Badge from '@/components/ui/Badge'
 import Tabs from '@/components/ui/Tabs'
 import Toast from '@/components/ui/Toast'
 
-const SettingsPage: React.FC = () => {
+interface SettingsPageProps {
+  navigate?: (page: string) => void
+  onSignOut?: () => void
+}
+
+const SettingsPage: React.FC<SettingsPageProps> = ({ navigate, onSignOut }) => {
   const { theme, setTheme, isDark } = useTheme()
   const { isInstallable, isInstalled, installApp } = usePWA()
   const { state, actions, isSupabaseMode } = useApp()
@@ -422,18 +427,49 @@ const SettingsPage: React.FC = () => {
         )}
         
         {activeTab === 'security' && (
-          <Card className="p-6">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-              Paramètres de sécurité
-            </h3>
-            <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-              <Shield className="w-16 h-16 mx-auto mb-4 opacity-50" />
-              <p>Paramètres de sécurité avancés</p>
-              <Button variant="outline" size="sm" className="mt-4" href="/settings/security">
-                Configurer la sécurité
-              </Button>
-            </div>
-          </Card>
+          <div className="space-y-6">
+            {/* Déconnexion */}
+            {isSupabaseEnabled() && onSignOut && (
+              <Card className="p-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center space-x-2">
+                  <User className="w-5 h-5" />
+                  <span>Session</span>
+                </h3>
+                <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                  <div>
+                    <h4 className="font-medium text-gray-900 dark:text-white">
+                      Déconnexion
+                    </h4>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      Se déconnecter de l'application
+                    </p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={onSignOut}
+                    leftIcon={<LogOut className="w-4 h-4" />}
+                    className="text-red-600 border-red-300 hover:bg-red-50"
+                  >
+                    Déconnexion
+                  </Button>
+                </div>
+              </Card>
+            )}
+
+            <Card className="p-6">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                Paramètres de sécurité
+              </h3>
+              <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                <Shield className="w-16 h-16 mx-auto mb-4 opacity-50" />
+                <p>Paramètres de sécurité avancés</p>
+                <Button variant="outline" size="sm" className="mt-4" href="/settings/security">
+                  Configurer la sécurité
+                </Button>
+              </div>
+            </Card>
+          </div>
         )}
         
         {activeTab === 'preferences' && (
