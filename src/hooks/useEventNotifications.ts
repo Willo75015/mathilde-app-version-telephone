@@ -21,9 +21,8 @@ export const useEventNotifications = (events: Event[]) => {
         body: options.message,
         icon: '/pwa-192x192.png',
         badge: '/badge-72x72.png',
-        tag: 'mathilde-fleurs-event',
-        renotify: true
-      })
+        tag: 'mathilde-fleurs-event'
+      } as NotificationOptions)
     }
     
     // Afficher aussi une notification dans l'interface (toast)

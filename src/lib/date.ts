@@ -183,12 +183,12 @@ export class DateUtils {
     const month = date.getMonth() + 1 // Base 1
 
     for (const [season, months] of Object.entries(SEASON_MONTHS)) {
-      if (months.includes(month)) {
-        return season as keyof typeof SEASONS
+      if ((months as readonly number[]).includes(month)) {
+        return season.toUpperCase() as keyof typeof SEASONS
       }
     }
 
-    return SEASONS.SPRING // Fallback
+    return 'SPRING' // Fallback
   }
 
   /**

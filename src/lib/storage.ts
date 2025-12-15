@@ -177,6 +177,19 @@ export class StorageManager {
     this.triggerSync('clear', null)
     console.log('🧹 Storage vidé')
   }
+
+  // Méthodes génériques pour api.ts
+  get(key: string): string | null {
+    return localStorage.getItem(key)
+  }
+
+  set(key: string, value: string): void {
+    localStorage.setItem(key, value)
+  }
+
+  remove(key: string): void {
+    localStorage.removeItem(key)
+  }
   
   // 📊 DEBUG
   getStorageInfo(): any {

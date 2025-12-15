@@ -684,7 +684,7 @@ export const supabaseService = {
 
     // Retourner la fonction de désinscription
     return () => {
-      supabase.removeChannel(channel)
+      supabase?.removeChannel(channel)
     }
   },
 
@@ -704,7 +704,7 @@ export const supabaseService = {
       .subscribe()
 
     return () => {
-      supabase.removeChannel(channel)
+      supabase?.removeChannel(channel)
     }
   },
 
@@ -724,7 +724,7 @@ export const supabaseService = {
       .subscribe()
 
     return () => {
-      supabase.removeChannel(channel)
+      supabase?.removeChannel(channel)
     }
   },
 

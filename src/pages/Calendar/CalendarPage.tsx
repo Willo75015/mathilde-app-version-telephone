@@ -125,7 +125,7 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ navigate }) => {
     } catch (error) {
       console.error('❌ CALENDAR - Erreur archivage:', error)
       showError(
-        `Erreur lors de l'archivage: ${error.message}`,
+        `Erreur lors de l'archivage: ${error instanceof Error ? error.message : 'Erreur inconnue'}`,
         'Erreur de facturation'
       )
     }
@@ -142,7 +142,7 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ navigate }) => {
             status: EventStatus.PAID,
             paid: true,
             paidDate: new Date(),
-            paymentMethod: 'transfer',
+            paymentMethod: 'transfer' as const,
             updatedAt: new Date()
           }
           
@@ -168,7 +168,7 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ navigate }) => {
     } catch (error) {
       console.error('❌ CALENDAR - Erreur paiement:', error)
       showError(
-        `Erreur lors de la mise à jour: ${error.message}`,
+        `Erreur lors de la mise à jour: ${error instanceof Error ? error.message : 'Erreur inconnue'}`,
         'Erreur de paiement'
       )
     }

@@ -104,10 +104,10 @@ export const useBackgroundSync = () => {
     await storeSyncTask(syncTask)
     setPendingSync(prev => [...prev, syncTask])
     
-    // Programmer la synchronisation
-    if ('serviceWorker' in navigator && 'sync' in window.ServiceWorkerRegistration.prototype) {
+    // Programmer la synchronisation (Background Sync API)
+    if ('serviceWorker' in navigator && 'SyncManager' in window) {
       const registration = await navigator.serviceWorker.ready
-      await registration.sync.register('background-sync')
+      await (registration as any).sync?.register('background-sync')
     }
   }, [])
   

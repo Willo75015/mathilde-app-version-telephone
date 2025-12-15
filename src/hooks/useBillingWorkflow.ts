@@ -75,7 +75,7 @@ export const useBillingWorkflow = () => {
     
     // 🆕 Ajouter le mode de paiement séparément si fourni
     if (paymentMethod) {
-      updateEvent(eventId, { paymentMethod })
+      updateEvent(eventId, { paymentMethod: paymentMethod as 'cash' | 'card' | 'transfer' | 'check' })
     }
     
     console.log('✅ BILLING - Événement marqué comme payé:', eventId)
