@@ -24,28 +24,8 @@
   
   <title>Mathilde Fleurs - Gestion d'Événements</title>
   
-  <!-- Preload optimisé pour dev et prod -->
-  <script>
-    // Preload intelligent avec bon timing
-    window.addEventListener('DOMContentLoaded', () => {
-      // Preload seulement si pas déjà en cache
-      if (!document.querySelector('script[src="/src/main.tsx"]')) {
-        const preloadScript = document.createElement('link')
-        preloadScript.rel = 'modulepreload'  // Correct pour les modules
-        preloadScript.href = '/src/main.tsx'
-        document.head.appendChild(preloadScript)
-      }
-      
-      // Image PWA seulement en production
-      if (window.location.protocol === 'https:' && document.querySelector('link[rel="manifest"]')) {
-        const preloadImage = document.createElement('link')
-        preloadImage.rel = 'preload'
-        preloadImage.href = '/pwa-192x192.png'
-        preloadImage.as = 'image'
-        document.head.appendChild(preloadImage)
-      }
-    })
-  </script>
+  <!-- Preload optimisé - désactivé pour éviter les erreurs 404 en production -->
+  <!-- Le preload des assets est géré automatiquement par Vite -->
 </head>
 <body>
   <div id="root"></div>
