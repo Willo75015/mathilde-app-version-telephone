@@ -84,7 +84,7 @@ const EventArchive: React.FC<EventArchiveProps> = ({ onClose }) => {
       const query = searchQuery.toLowerCase()
       filtered = filtered.filter(event =>
         event.title.toLowerCase().includes(query) ||
-        event.description.toLowerCase().includes(query) ||
+        (event.description || '').toLowerCase().includes(query) ||
         event.location.toLowerCase().includes(query) ||
         event.clientName?.toLowerCase().includes(query)
       )

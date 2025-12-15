@@ -91,33 +91,30 @@ const Home: React.FC<HomeProps> = ({ navigate }) => {
   }, [state.events])
 
   // Handlers stables avec useCallback
-  const handleEventEdit = useCallback((updatedEvent: Event) => {
+  const handleEventEdit = useCallback(async (updatedEvent: Event) => {
     console.log('🔍 HOME - Début de sauvegarde:', {
       eventId: updatedEvent.id,
       title: updatedEvent.title
     })
-    
+
     // 🆕 Distinguer création vs modification par l'ID généré
     const isCreating = updatedEvent.id.startsWith('event-')
-    
+
     if (isCreating) {
       console.log('🆕 HOME - Création nouvel événement')
-      
+
       // 🔧 CORRECTION: Supprimer les champs auto-générés pour createEvent
       const { id, createdAt, updatedAt, ...eventDataForCreation } = updatedEvent
-      
+
       console.log('🔧 Données envoyées à createEvent:', eventDataForCreation)
-      const newEvent = actions.createEvent(eventDataForCreation)
-      
+      const newEvent = await actions.createEvent(eventDataForCreation)
+
       // 🔥 SI IL Y A DES FLEURISTES ASSIGNÉS, DÉCLENCHER LE WORKFLOW !
       if (eventDataForCreation.assignedFlorists && eventDataForCreation.assignedFlorists.length > 0) {
         console.log('🎯 DÉCLENCHEMENT workflow fleuristes sur nouvel événement')
-        // Petite attente pour que createEvent soit fini
-        setTimeout(() => {
-          actions.updateEventWithTeamCheck(newEvent.id, eventDataForCreation)
-        }, 100)
+        actions.updateEventWithTeamCheck(newEvent.id, eventDataForCreation)
       }
-      
+
       console.log('✅ HOME - Nouvel événement créé avec workflow')
     } else if (updatedEvent.id) {
       console.log('📤 HOME - Modification événement existant:', updatedEvent.id)
