@@ -25,8 +25,11 @@ interface EventsPageProps {
   navigate?: (page: string, params?: any) => void
 }
 
+// Types pour le tri
+type SortField = 'date' | 'title' | 'status' | 'budget'
+
 const EventsPage: React.FC<EventsPageProps> = ({ navigate }) => {
-  const { events, loadEvents, isLoading, updateEvent, createEvent } = useEvents()
+  const { events, isLoading, updateEvent, createEvent } = useEvents()
   const statusCounts = useStatusCounts(events)
   
   // 🆕 Hook pour la facturation
@@ -37,6 +40,10 @@ const EventsPage: React.FC<EventsPageProps> = ({ navigate }) => {
   
   // State pour recherche et modales
   const [searchQuery, setSearchQuery] = useState('')
+
+  // États pour le tri
+  const [sortField, setSortField] = useState<SortField>('date')
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
   
   // 🆕 États pour EventModal
   const [isEventModalOpen, setIsEventModalOpen] = useState(false)
@@ -119,8 +126,9 @@ const EventsPage: React.FC<EventsPageProps> = ({ navigate }) => {
     }
   }
   
-  const handleRefresh = async () => {
-    await loadEvents()
+  const handleRefresh = () => {
+    // Les événements sont automatiquement synchronisés via le contexte
+    console.log('Refresh triggered - events auto-sync via context')
   }
   
   const handleExport = () => {
@@ -576,7 +584,7 @@ const EventsPage: React.FC<EventsPageProps> = ({ navigate }) => {
                             <div className="flex items-center space-x-2 mb-2">
                               <XCircle className="w-4 h-4 text-red-500" />
                               <h4 className="font-medium text-red-900 dark:text-red-100">{event.title}</h4>
-                              <Badge variant="destructive" size="sm">
+                              <Badge variant="danger" size="sm">
                                 ANNULÉ
                               </Badge>
                             </div>
@@ -629,9 +637,9 @@ const EventsPage: React.FC<EventsPageProps> = ({ navigate }) => {
                               size="sm"
                               onClick={() => {
                                 if (confirm(`Réactiver l'événement "${event.title}" ?`)) {
-                                  updateEvent(event.id, { 
+                                  updateEvent(event.id, {
                                     status: EventStatus.DRAFT,
-                                    cancelledAt: null,
+                                    cancelledAt: undefined,
                                     notes: (event.notes || '').replace(/\[ANNULÉ\].*$/, '').trim() + '\n[RÉACTIVÉ] Mission réactivée le ' + new Date().toLocaleString('fr-FR')
                                   })
                                 }
