@@ -292,24 +292,33 @@ export const ERROR_MESSAGES = {
   NETWORK_ERROR: 'Erreur de connexion réseau',
   TIMEOUT_ERROR: 'La requête a expiré',
   PERMISSION_DENIED: 'Accès refusé',
-  
+
+  // Erreurs HTTP (utilisées par api.ts)
+  networkError: 'Erreur de connexion réseau',
+  timeout: 'La requête a expiré',
+  unauthorized: 'Non autorisé',
+  forbidden: 'Accès interdit',
+  notFound: 'Ressource introuvable',
+  rateLimitExceeded: 'Trop de requêtes, veuillez réessayer plus tard',
+  serverError: 'Erreur serveur',
+
   // Erreurs de validation
   REQUIRED_FIELD: 'Ce champ est requis',
   INVALID_EMAIL: 'Adresse email invalide',
   INVALID_PHONE: 'Numéro de téléphone invalide',
   INVALID_DATE: 'Date invalide',
   PASSWORD_TOO_WEAK: 'Mot de passe trop faible',
-  
+
   // Erreurs métier
   EVENT_NOT_FOUND: 'Événement introuvable',
   CLIENT_NOT_FOUND: 'Client introuvable',
   BUDGET_EXCEEDED: 'Budget dépassé',
   DATE_IN_PAST: 'La date ne peut pas être dans le passé',
-  
+
   // Erreurs de stockage
   STORAGE_QUOTA_EXCEEDED: 'Espace de stockage insuffisant',
   STORAGE_ACCESS_DENIED: 'Accès au stockage refusé',
-  
+
   // Erreurs PWA
   PWA_NOT_SUPPORTED: 'Installation PWA non supportée',
   NOTIFICATION_PERMISSION_DENIED: 'Permissions de notification refusées'

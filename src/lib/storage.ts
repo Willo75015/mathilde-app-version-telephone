@@ -20,9 +20,11 @@ export class StorageManager {
   constructor() {
     // Écouter les changements de localStorage (sync entre onglets)
     window.addEventListener('storage', this.handleStorageChange.bind(this))
-    
+
     // Écouter les événements custom pour sync même onglet
-    window.addEventListener(StorageManager.SYNC_EVENT, this.handleCustomSync.bind(this))
+    window.addEventListener(StorageManager.SYNC_EVENT, ((event: Event) => {
+      this.handleCustomSync(event as CustomEvent)
+    }) as EventListener)
   }
   
   // 📥 CHARGEMENT DES DONNÉES
@@ -196,3 +198,6 @@ export class StorageManager {
     return `${(total / 1024).toFixed(2)} KB`
   }
 }
+
+// Export de l'instance singleton pour utilisation dans api.ts
+export const storage = StorageManager.getInstance()

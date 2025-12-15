@@ -53,7 +53,7 @@ export interface FloristStatusCalculation {
 // Événements
 export interface Event extends BaseEntity {
   title: string
-  description: string
+  description?: string
   date: Date
   endDate?: Date
   time: string

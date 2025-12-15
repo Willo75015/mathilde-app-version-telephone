@@ -53,7 +53,12 @@ const EditClientModal: React.FC<EditClientModalProps> = ({
           lastName: foundClient.lastName,
           email: foundClient.email,
           phone: foundClient.phone,
-          address: foundClient.address,
+          address: {
+            street: foundClient.address.street,
+            city: foundClient.address.city,
+            postalCode: foundClient.address.postalCode,
+            country: foundClient.address.country || 'France'
+          },
           comments: (foundClient as any).comments || '',
           managerPayment: (foundClient as any).managerPayment || 0,
           freelancePayment: (foundClient as any).freelancePayment || 0

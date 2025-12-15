@@ -590,8 +590,5 @@ export const MathildeAPI = {
   }
 }
 
-// Types d'export
-export type { ApiResponse, ApiError, RequestConfig, ApiClientConfig }
-
 // Export par défaut
 export default apiClient

@@ -133,8 +133,8 @@ export class FloristStatusManager {
   ): Florist[] {
     return florists.map(florist => {
       // Trouve les événements assignés à ce fleuriste
-      const assignedEvents = allEvents.filter(event => 
-        event.florists?.some(f => f.id === florist.id)
+      const assignedEvents = allEvents.filter(event =>
+        event.assignedFlorists?.some(f => f.id === florist.id)
       )
       
       return this.updateFloristStatus(florist, assignedEvents)

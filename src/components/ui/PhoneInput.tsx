@@ -8,6 +8,8 @@ interface PhoneInputProps {
   error?: string
   placeholder?: string
   disabled?: boolean
+  label?: string
+  required?: boolean
 }
 
 const PhoneInput: React.FC<PhoneInputProps> = ({
@@ -16,7 +18,9 @@ const PhoneInput: React.FC<PhoneInputProps> = ({
   className,
   error,
   placeholder = "01-23-45-67-89",
-  disabled = false
+  disabled = false,
+  label,
+  required = false
 }) => {
   const [displayValue, setDisplayValue] = useState('')
 
@@ -93,7 +97,13 @@ const PhoneInput: React.FC<PhoneInputProps> = ({
 
   return (
     <div className={clsx("space-y-1", className)}>
+      {label && (
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          {label}{required && <span className="text-red-500 ml-1">*</span>}
+        </label>
+      )}
       <input
+        required={required}
         type="text"
         value={displayValue}
         onChange={handleChange}

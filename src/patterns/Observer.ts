@@ -36,6 +36,7 @@ export class AppStore {
     events: [],
     clients: [],
     flowers: [],
+    florists: [],
     isLoading: false,
     error: null,
     theme: Theme.SYSTEM

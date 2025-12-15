@@ -31,10 +31,10 @@ interface AppContextType {
     updateEvent: (id: string, event: Partial<Event>) => void
     updateEventWithTeamCheck: (id: string, event: Partial<Event>) => void
     updateEventWithStatusDates: (id: string, newStatus: EventStatus) => void
-    createEvent: (event: Omit<Event, 'id' | 'createdAt' | 'updatedAt'>) => void
+    createEvent: (event: Omit<Event, 'id' | 'createdAt' | 'updatedAt'>) => Promise<Event>
     deleteEvent: (id: string) => void
     updateClient: (id: string, client: Partial<Client>) => void
-    createClient: (client: Omit<Client, 'id' | 'createdAt' | 'updatedAt'>) => void
+    createClient: (client: Omit<Client, 'id' | 'createdAt' | 'updatedAt'>) => Promise<Client>
     deleteClient: (id: string) => void
     setError: (error: string | null) => void
     setLoading: (loading: boolean) => void
@@ -452,7 +452,7 @@ Mathilde Fleurs`
     }
   }
   
-  const createEvent = async (eventData: Omit<Event, 'id' | 'createdAt' | 'updatedAt'>) => {
+  const createEvent = async (eventData: Omit<Event, 'id' | 'createdAt' | 'updatedAt'>): Promise<Event> => {
     const newEvent: Event = {
       ...eventData,
       id: `event-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -528,7 +528,7 @@ Mathilde Fleurs`
     }
   }
 
-  const createClient = async (clientData: Omit<Client, 'id' | 'createdAt' | 'updatedAt'>) => {
+  const createClient = async (clientData: Omit<Client, 'id' | 'createdAt' | 'updatedAt'>): Promise<Client> => {
     const newClient: Client = {
       ...clientData,
       id: `client-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -550,6 +550,8 @@ Mathilde Fleurs`
         console.error('❌ Erreur sync Supabase createClient:', error)
       }
     }
+
+    return newClient
   }
 
   // BUG #3 FIX: Suppression client avec nettoyage des événements associés

@@ -614,12 +614,3 @@ export const AnalyticsExporter = {
 
 // Export par défaut
 export default ExportManager
-
-// Types d'export
-export type { 
-  ExportOptions, 
-  ExportColumn, 
-  ExportData, 
-  PDFOptions, 
-  ExcelOptions 
-}

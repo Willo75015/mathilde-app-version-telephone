@@ -1,5 +1,5 @@
 import React, { forwardRef, useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { AnimatePresence, motion } from 'framer-motion'
 import { clsx } from 'clsx'
 import { Eye, EyeOff, AlertCircle } from 'lucide-react'
 
@@ -89,15 +89,19 @@ const Input = forwardRef<HTMLInputElement, InputProps>(({
           </div>
         )}
         
-        <motion.input
+        <input
           ref={ref}
           type={inputType}
           className={inputClasses}
           disabled={disabled}
-          onFocus={() => setIsFocused(true)}
-          onBlur={() => setIsFocused(false)}
-          whileFocus={{ scale: 1.01 }}
-          transition={{ type: "spring", stiffness: 300, damping: 30 }}
+          onFocus={(e) => {
+            setIsFocused(true)
+            props.onFocus?.(e)
+          }}
+          onBlur={(e) => {
+            setIsFocused(false)
+            props.onBlur?.(e)
+          }}
           {...props}
         />
         

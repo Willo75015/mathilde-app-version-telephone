@@ -249,7 +249,7 @@ const EditFloristModal: React.FC<EditFloristModalProps> = ({
       isOpen={isOpen}
       onClose={onClose}
       title="Modifier le fleuriste"
-      size="large"
+      size="lg"
     >
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Informations de base */}

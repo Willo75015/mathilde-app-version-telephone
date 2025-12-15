@@ -569,7 +569,7 @@ const FloristCard: React.FC<FloristCardProps> = ({
           title: allEvents.find(e => e.id === currentEventId)?.title || 'Événement',
           date: currentEventDate || new Date()
         } : null}
-        floristStatus={status || 'available'}
+        floristStatus={status || 'pending'}
         isOpen={showContactModal}
         onClose={() => setShowContactModal(false)}
       />

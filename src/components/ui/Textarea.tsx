@@ -1,5 +1,4 @@
 import React, { forwardRef } from 'react'
-import { motion } from 'framer-motion'
 import { clsx } from 'clsx'
 import { AlertCircle } from 'lucide-react'
 
@@ -56,13 +55,11 @@ const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(({
       )}
       
       <div className="relative">
-        <motion.textarea
+        <textarea
           ref={ref}
           rows={rows}
           className={textareaClasses}
           disabled={disabled}
-          whileFocus={{ scale: 1.01 }}
-          transition={{ type: "spring", stiffness: 300, damping: 30 }}
           {...props}
         />
         
@@ -74,13 +71,9 @@ const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(({
       </div>
       
       {error && (
-        <motion.p
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mt-1 text-xs text-red-600 dark:text-red-400"
-        >
+        <p className="mt-1 text-xs text-red-600 dark:text-red-400">
           {error}
-        </motion.p>
+        </p>
       )}
       
       {hint && !error && (

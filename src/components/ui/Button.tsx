@@ -11,6 +11,7 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   leftIcon?: React.ReactNode
   rightIcon?: React.ReactNode
   animation?: MotionProps
+  href?: string
 }
 
 const Button = forwardRef<HTMLButtonElement, ButtonProps>(({
@@ -23,6 +24,11 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(({
   rightIcon,
   disabled,
   animation,
+  href,
+  onAnimationStart,
+  onDrag,
+  onDragEnd,
+  onDragStart,
   ...props
 }, ref) => {
   const shouldReduceMotion = useReducedMotion()
@@ -85,7 +91,36 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(({
     whileTap: { scale: disabled ? 1 : 0.98 },
     transition: { type: "spring", stiffness: 400, damping: 17 }
   }
-  
+
+  const content = (
+    <>
+      {isLoading ? (
+        <Loader2 className={clsx(iconSizes[size], 'animate-spin')} />
+      ) : leftIcon ? (
+        <span className={iconSizes[size]}>{leftIcon}</span>
+      ) : null}
+
+      {children}
+
+      {rightIcon && !isLoading && (
+        <span className={iconSizes[size]}>{rightIcon}</span>
+      )}
+    </>
+  )
+
+  // Si href est fourni, rendre un lien <a>
+  if (href) {
+    return (
+      <a
+        href={href}
+        className={classes}
+        {...(disabled && { 'aria-disabled': true, tabIndex: -1 })}
+      >
+        {content}
+      </a>
+    )
+  }
+
   return (
     <motion.button
       ref={ref}
@@ -96,17 +131,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(({
       {...animation}
       {...props}
     >
-      {isLoading ? (
-        <Loader2 className={clsx(iconSizes[size], 'animate-spin')} />
-      ) : leftIcon ? (
-        <span className={iconSizes[size]}>{leftIcon}</span>
-      ) : null}
-      
-      {children}
-      
-      {rightIcon && !isLoading && (
-        <span className={iconSizes[size]}>{rightIcon}</span>
-      )}
+      {content}
     </motion.button>
   )
 })
