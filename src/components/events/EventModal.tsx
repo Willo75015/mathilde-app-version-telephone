@@ -307,6 +307,16 @@ const EventModal: React.FC<EventModalProps> = ({
 
   const allFlorists = getAllFloristsFromEvents()
 
+  // 🔧 FIX React #310: Hook isMobile déplacé AVANT le return conditionnel
+  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' && window.innerWidth < 768)
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768)
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
+
   if (!editedEvent) return null
 
   // Utiliser editedEvent pour les calculs - AVEC FALLBACKS INTELLIGENTS
@@ -720,15 +730,7 @@ Mathilde Fleurs`
     return 'Disponible'
   }
 
-  // Détecter mobile avec hook réactif
-  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' && window.innerWidth < 768)
-
-  useEffect(() => {
-    const checkMobile = () => setIsMobile(window.innerWidth < 768)
-    checkMobile()
-    window.addEventListener('resize', checkMobile)
-    return () => window.removeEventListener('resize', checkMobile)
-  }, [])
+  // Note: hook isMobile déplacé en haut du composant (avant return null) pour fix #310
 
   return (
     <AnimatePresence>
