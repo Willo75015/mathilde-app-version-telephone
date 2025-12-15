@@ -1525,8 +1525,8 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ navigate }) => {
                         Budget total: {clientInfo.totalBudget.toLocaleString()}€
                       </div>
                       <div className="text-xs text-gray-500 mt-2">
-                        Prochaine mission: {clientInfo.nextEvent ? 
-                          `${clientInfo.nextEvent.date.toLocaleDateString()} - ${clientInfo.nextEvent.title}` : 
+                        Prochaine mission: {clientInfo.nextEvent ?
+                          `${new Date(clientInfo.nextEvent.date).toLocaleDateString('fr-FR')} - ${clientInfo.nextEvent.title}` :
                           'Aucune'
                         }
                       </div>

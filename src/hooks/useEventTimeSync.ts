@@ -122,20 +122,22 @@ export const useEventTimeSync = () => {
   
   const getTodaysEvents = useCallback(() => {
     const today = new Date(currentTime.getFullYear(), currentTime.getMonth(), currentTime.getDate())
-    
+
     return state.events.filter(event => {
-      const eventDay = new Date(event.date.getFullYear(), event.date.getMonth(), event.date.getDate())
+      const eventDate = new Date(event.date)
+      const eventDay = new Date(eventDate.getFullYear(), eventDate.getMonth(), eventDate.getDate())
       return eventDay.getTime() === today.getTime()
     })
   }, [state.events, currentTime])
   
   const getUpcomingEvents = useCallback(() => {
     const today = new Date(currentTime.getFullYear(), currentTime.getMonth(), currentTime.getDate())
-    
+
     return state.events.filter(event => {
-      const eventDay = new Date(event.date.getFullYear(), event.date.getMonth(), event.date.getDate())
+      const eventDate = new Date(event.date)
+      const eventDay = new Date(eventDate.getFullYear(), eventDate.getMonth(), eventDate.getDate())
       return eventDay > today && getAutoEventStatus(event) !== EventStatus.CANCELLED
-    }).sort((a, b) => a.date.getTime() - b.date.getTime())
+    }).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
   }, [state.events, currentTime, getAutoEventStatus])
   
   const getOverdueEvents = useCallback(() => {

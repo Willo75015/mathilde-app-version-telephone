@@ -12,25 +12,24 @@ export const useNotifications = () => {
     eventId?: string
   ) => {
     const id = `notification-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
-    
+
     console.log(`📬 AJOUT NOTIFICATION:`, { id, type, title, message, eventId })
-    
-    const notification: NotificationProps = {
-      id,
-      type,
-      title,
-      message,
-      duration,
-      eventId,
-      onClose: removeNotification
-    }
 
     setNotifications(prev => {
+      const notification: NotificationProps = {
+        id,
+        type,
+        title,
+        message,
+        duration,
+        eventId,
+        onClose: () => setNotifications(current => current.filter(n => n.id !== id))
+      }
       const newNotifications = [...prev, notification]
       console.log(`📬 NOUVEAU TOTAL NOTIFICATIONS: ${newNotifications.length}`)
       return newNotifications
     })
-    
+
     return id
   }, [])
 
