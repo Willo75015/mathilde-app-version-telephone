@@ -227,7 +227,7 @@ export interface Address {
   street: string
   city: string
   postalCode: string
-  country: string
+  country?: string // Optionnel, valeur par défaut "France"
 }
 
 export interface ClientPreferences {

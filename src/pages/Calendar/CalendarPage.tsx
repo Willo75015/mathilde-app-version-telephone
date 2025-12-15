@@ -9,7 +9,7 @@ import { ArchiveEventModal, PaymentTrackingModal } from '@/components/modals/bil
 import { useNotifications } from '@/hooks/useNotifications'
 
 interface CalendarPageProps {
-  navigate: (page: string, params?: any) => void
+  navigate?: (page: string, params?: any) => void
 }
 
 type ViewMode = 'calendrier' | 'kanban'
@@ -539,10 +539,11 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ navigate }) => {
                               )}
                             </span>
                             
-                            <button 
+                            <button
                               onClick={(e) => {
                                 e.stopPropagation()
-                                navigate('events/edit', { eventId: event.id })
+                                // Ouvrir le modal d'édition directement
+                                handleEventClick(event)
                               }}
                               className="text-gray-400 hover:text-gray-600 transition-colors"
                             >

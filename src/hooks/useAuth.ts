@@ -32,10 +32,11 @@ export const useAuth = (): UseAuthReturn => {
       return
     }
 
-    // Récupérer la session actuelle
+    // Récupérer la session actuelle - supabase est garanti non-null à ce stade
+    const supabaseClient = supabase! // Type assertion après le check initial
     const getSession = async () => {
       try {
-        const { data: { session }, error } = await supabase.auth.getSession()
+        const { data: { session }, error } = await supabaseClient.auth.getSession()
 
         if (error) {
           console.error('Erreur récupération session:', error)
@@ -58,7 +59,7 @@ export const useAuth = (): UseAuthReturn => {
     getSession()
 
     // Écouter les changements d'auth
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+    const { data: { subscription } } = supabaseClient.auth.onAuthStateChange(
       async (event, session) => {
         console.log('Auth event:', event)
         setState({
