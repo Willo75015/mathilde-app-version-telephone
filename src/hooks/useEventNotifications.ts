@@ -1,8 +1,8 @@
 import { useEffect, useCallback } from 'react'
 import { Event, EventStatus } from '@/types'
 
-// Types pour les notifications
-interface NotificationOptions {
+// Types pour les notifications (renommé pour éviter conflit avec API native)
+interface AppNotificationOptions {
   title: string
   message: string
   type: 'success' | 'info' | 'warning' | 'error'
@@ -12,9 +12,9 @@ interface NotificationOptions {
 
 // Hook pour gérer les notifications automatiques des événements
 export const useEventNotifications = (events: Event[]) => {
-  
+
   // Fonction pour afficher une notification
-  const showNotification = useCallback((options: NotificationOptions) => {
+  const showNotification = useCallback((options: AppNotificationOptions) => {
     // Utiliser l'API de notification native du navigateur si disponible
     if ('Notification' in window && Notification.permission === 'granted') {
       new Notification(options.title, {
@@ -22,7 +22,7 @@ export const useEventNotifications = (events: Event[]) => {
         icon: '/pwa-192x192.png',
         badge: '/badge-72x72.png',
         tag: 'mathilde-fleurs-event'
-      } as NotificationOptions)
+      })
     }
     
     // Afficher aussi une notification dans l'interface (toast)

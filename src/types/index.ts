@@ -83,17 +83,19 @@ export interface Event extends BaseEntity {
 
 // Association Événement-Fleuriste
 export interface EventFlorist {
+  id?: string
   floristId: string
   floristName?: string
   florist?: Florist
+  phone?: string // Téléphone du fleuriste
   isConfirmed: boolean
   isRefused?: boolean
-  status?: 'pending' | 'confirmed' | 'refused' | 'not_selected' // 🆕 Nouveau statut
+  status?: 'pending' | 'confirmed' | 'refused' | 'not_selected'
   assignedAt: Date
   confirmedAt?: Date
   role?: string // Chef d'équipe, Assistant, etc.
   notes?: string
-  preWrittenMessage?: string // 🆕 Message pré-écrit pour les "non retenus"
+  preWrittenMessage?: string // Message pré-écrit pour les "non retenus"
 }
 
 export enum EventStatus {

@@ -786,7 +786,7 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ navigate }) => {
                   return (
                     <div
                       key={event.id}
-                      className={`p-4 rounded-lg border-l-4 ${kanbanColumn.bgColor} ${kanbanColumn.borderColor} hover:shadow-md transition-shadow cursor-pointer`}
+                      className={`p-4 rounded-lg border-l-4 ${kanbanColumn.bgColor} ${kanbanColumn.borderColor || 'border-gray-200'} hover:shadow-md transition-shadow cursor-pointer`}
                       onClick={(e) => {
                         e.stopPropagation()
                         handleEventClick(event)
@@ -1454,9 +1454,9 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ navigate }) => {
                         <button
                           onClick={() => {
                             if (confirm(`Réactiver l'événement "${event.title}" ?`)) {
-                              actions.updateEvent(event.id, { 
+                              actions.updateEvent(event.id, {
                                 status: 'draft' as any,
-                                cancelledAt: null,
+                                cancelledAt: undefined,
                                 notes: (event.notes || '').replace(/\[ANNULÉ\].*$/, '').trim() + '\n[RÉACTIVÉ] Mission réactivée le ' + new Date().toLocaleString('fr-FR')
                               })
                             }

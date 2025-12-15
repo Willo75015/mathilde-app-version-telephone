@@ -20,6 +20,7 @@ export interface KanbanColumn {
   bgColor: string
   headerColor: string
   textColor: string
+  borderColor?: string
   icon: string
   iconColor: string
   emoji: string
