@@ -10,7 +10,7 @@ import { APP_CONFIG } from './constants'
 // Types pour l'export
 export interface ExportOptions {
   filename?: string
-  format: 'pdf' | 'excel' | 'csv' | 'json'
+  format?: 'pdf' | 'excel' | 'csv' | 'json'
   title?: string
   subtitle?: string
   includeHeader?: boolean

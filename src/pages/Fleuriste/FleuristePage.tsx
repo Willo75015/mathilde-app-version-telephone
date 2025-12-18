@@ -4,7 +4,7 @@ import {
   Search, Grid, List, Users, 
   Star, Phone, Mail, MapPin, Plus, Edit, Clock, AlertCircle
 } from 'lucide-react'
-import { Florist, FloristAvailability, Event } from '@/types'
+import { Florist, FloristAvailability } from '@/types'
 import { FloristStatusManager, useFloristStatus } from '@/utils/floristStatus'
 import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
@@ -26,23 +26,22 @@ const FleuristePage: React.FC<FleuristePageProps> = ({ navigate }) => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
 
   // Simulation d'événements assignés (tu peux récupérer ça depuis ton context)
-  const [assignedEvents] = useState<Event[]>([
+  // Type any[] utilisé car ces données simulées sont incomplètes - en production, utiliser les vrais Event[] du contexte
+  const [assignedEvents] = useState<any[]>([
     {
       id: '1',
       title: 'Mariage Sophie & Thomas',
       date: new Date('2024-12-28T14:00:00'),
       endDate: new Date('2024-12-28T22:00:00'),
-      clientId: '1',
-      florists: [{ id: '2', name: 'Thomas Dubois', phone: '06 98 76 54 32' }]
-    } as Event,
+      clientId: '1'
+    },
     {
-      id: '2', 
+      id: '2',
       title: 'Événement Entreprise',
       date: new Date('2024-12-29T09:00:00'),
       endDate: new Date('2024-12-29T18:00:00'),
-      clientId: '2',
-      florists: [{ id: '6', name: 'Pierre Vincent', phone: '06 11 22 33 44' }]
-    } as Event
+      clientId: '2'
+    }
   ])
 
   // Données des fleuristes avec périodes d'indisponibilité - AVEC PERSISTANCE

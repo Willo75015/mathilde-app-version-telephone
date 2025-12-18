@@ -6,14 +6,15 @@
 import { SEASONS, SEASON_MONTHS } from './constants'
 
 // Types pour les dates
-export type DateFormat = 
-  | 'dd/MM/yyyy' 
-  | 'dd/MM/yyyy HH:mm' 
-  | 'dd MMMM yyyy' 
+export type DateFormat =
+  | 'dd/MM/yyyy'
+  | 'dd/MM/yyyy HH:mm'
+  | 'dd MMMM yyyy'
   | 'EEEE dd MMMM yyyy'
   | 'dd MMM yyyy'
   | 'HH:mm'
   | 'iso'
+  | 'yyyy-MM-dd'
 
 export type TimeUnit = 'minute' | 'hour' | 'day' | 'week' | 'month' | 'year'
 
@@ -93,7 +94,10 @@ export class DateUtils {
       
       case 'iso':
         return date.toISOString()
-      
+
+      case 'yyyy-MM-dd':
+        return `${year}-${month}-${day}`
+
       default:
         return `${day}/${month}/${year}`
     }

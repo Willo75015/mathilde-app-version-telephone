@@ -120,14 +120,16 @@ const ClientsPage: React.FC<ClientsPageProps> = ({ navigate }) => {
     }
   }
   
-  const handleRefresh = async () => {
-    await loadClients()
+  const handleRefresh = () => {
+    // Les clients sont automatiquement rechargés via le contexte
+    window.location.reload()
   }
-  
-  const handleLoadSampleData = async () => {
+
+  const handleLoadSampleData = () => {
     // Charger les données d'exemple
     initializeSampleData()
-    await loadClients()
+    // Les clients sont automatiquement rechargés via le contexte
+    window.location.reload()
     console.log('🌸 Données d\'exemple chargées!')
   }
   

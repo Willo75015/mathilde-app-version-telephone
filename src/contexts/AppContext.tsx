@@ -16,6 +16,8 @@ interface AppFlorist {
   availability: FloristAvailability | 'available' | 'on_mission' | 'unavailable'
   rating: number
   isMainFlorist: boolean
+  location?: string
+  avatar?: string
   unavailabilityPeriods: Array<{
     id: string
     startDate: Date

@@ -882,10 +882,7 @@ const AnalyticsPage: React.FC<AnalyticsPageProps> = ({ navigate }) => {
                             </p>
                             {/* 🆕 AFFICHAGE DES MÉTRIQUES SELON LE THÈME */}
                             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                              {activeTheme === 'facturation' ? `${Math.round(item.primaryMetric * 10) / 10}j facturation` :
-                               activeTheme === 'paiement' ? `${Math.round(item.primaryMetric * 10) / 10}j paiement` :
-                               activeTheme === 'missions' ? `${item.primaryMetric} missions` :
-                               item.secondaryInfo}
+                              {item.secondaryInfo}
                             </p>
                           </div>
                         </div>

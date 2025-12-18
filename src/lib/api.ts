@@ -4,7 +4,6 @@
  */
 
 import { API_CONFIG, ERROR_MESSAGES, SUCCESS_MESSAGES } from './constants'
-import { storage } from './storage'
 
 // Types pour l'API
 export interface ApiResponse<T = any> {
@@ -87,7 +86,7 @@ export class ApiClient {
   private setupDefaultInterceptors(): void {
     // Intercepteur de requête pour l'authentification
     this.config.interceptors.request.push(async (config) => {
-      const token = await storage.get('auth_token')
+      const token = localStorage.getItem('auth_token')
       if (token && config.auth !== false) {
         config.headers = {
           ...config.headers,
@@ -149,7 +148,7 @@ export class ApiClient {
       }, requestConfig.timeout || this.config.timeout)
 
       // Faire la requête avec retry
-      const response = await this.makeRequestWithRetry(
+      const response = await this.makeRequestWithRetry<T>(
         url,
         requestConfig,
         abortController.signal,
@@ -161,7 +160,7 @@ export class ApiClient {
 
       // Mettre en cache si nécessaire
       if (config.cache && config.method === 'GET') {
-        await this.setCache(url, response, config.cacheTTL)
+        await this.setCache<T>(url, response, config.cacheTTL)
       }
 
       return response
@@ -333,9 +332,9 @@ export class ApiClient {
    * Gérer les erreurs d'authentification
    */
   private async handleAuthError(): Promise<void> {
-    await storage.remove('auth_token')
-    await storage.remove('user_data')
-    
+    localStorage.removeItem('auth_token')
+    localStorage.removeItem('user_data')
+
     // Rediriger vers la page de connexion
     window.location.href = '/login'
   }
@@ -346,7 +345,16 @@ export class ApiClient {
   private async getFromCache<T>(url: string): Promise<ApiResponse<T> | null> {
     try {
       const cacheKey = `api_cache_${this.hashUrl(url)}`
-      return await storage.get(cacheKey, null, 'sessionStorage')
+      const cached = sessionStorage.getItem(cacheKey)
+      if (!cached) return null
+
+      const parsed = JSON.parse(cached)
+      // Vérifier l'expiration
+      if (parsed.expiration && Date.now() > parsed.expiration) {
+        sessionStorage.removeItem(cacheKey)
+        return null
+      }
+      return parsed.data as ApiResponse<T>
     } catch (error) {
       console.warn('Cache read error:', error)
       return null
@@ -360,7 +368,11 @@ export class ApiClient {
   ): Promise<void> {
     try {
       const cacheKey = `api_cache_${this.hashUrl(url)}`
-      await storage.set(cacheKey, response, { expiration: ttl }, 'sessionStorage')
+      const cacheData = {
+        data: response,
+        expiration: Date.now() + ttl
+      }
+      sessionStorage.setItem(cacheKey, JSON.stringify(cacheData))
     } catch (error) {
       console.warn('Cache write error:', error)
     }

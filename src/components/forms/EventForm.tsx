@@ -11,7 +11,7 @@ import DatePicker from '@/components/ui/DatePicker'
 import Card, { CardHeader, CardTitle, CardContent } from '@/components/ui/Card'
 import { EventValidationSchema } from '@/utils/validation'
 import { useEvents, useClients, useFlorists } from '@/contexts/AppContext'
-import { EventStatus } from '@/types'
+import { Event, EventStatus } from '@/types'
 import { validateEventDate } from '@/utils/floristAvailability'
 
 // Schema de validation simplifié pour le formulaire
@@ -37,6 +37,7 @@ const EventFormSchema = z.object({
 type EventFormData = z.infer<typeof EventFormSchema>
 
 interface EventFormProps {
+  initialData?: Event
   onSubmit?: (data: any) => void
   onSuccess?: () => void
   onCancel?: () => void

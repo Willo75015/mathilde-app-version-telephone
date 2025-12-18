@@ -26,6 +26,7 @@ export interface Florist extends BaseEntity {
   certifications: string[]
   comments?: string
   unavailabilityPeriods?: UnavailabilityPeriod[]
+  isMainFlorist?: boolean
 }
 
 export enum FloristAvailability {
@@ -236,6 +237,11 @@ export interface ClientPreferences {
   favoriteColors: string[]
   favoriteFlowers: string[]
   allergies?: string[]
+  budget?: {
+    min: number
+    max: number
+    currency: string
+  }
 }
 
 // Fleurs

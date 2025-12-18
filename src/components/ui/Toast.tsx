@@ -1,10 +1,10 @@
 import React, { useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { CheckCircle, XCircle, X } from 'lucide-react'
+import { CheckCircle, XCircle, AlertTriangle, X } from 'lucide-react'
 
 interface ToastProps {
   message: string
-  type: 'success' | 'error'
+  type: 'success' | 'error' | 'warning'
   onClose: () => void
   duration?: number
 }
@@ -53,6 +53,12 @@ const Toast: React.FC<ToastProps> = ({
         bg: 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800',
         text: 'text-green-800 dark:text-green-200',
         icon: <CheckCircle className="w-5 h-5 text-green-500" />
+      }
+    } else if (type === 'warning') {
+      return {
+        bg: 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800',
+        text: 'text-yellow-800 dark:text-yellow-200',
+        icon: <AlertTriangle className="w-5 h-5 text-yellow-500" />
       }
     } else {
       return {
