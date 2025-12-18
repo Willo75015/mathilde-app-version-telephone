@@ -391,10 +391,9 @@ const ClientProfile: React.FC<ClientProfileProps> = ({ clientId, navigate }) => 
         )}
         
         {activeTab === 'events' && (
-          <EventList 
-            events={clientEvents} 
-            viewMode="list"
-            showClient={false}
+          <EventList
+            events={clientEvents}
+            emptyMessage="Aucun événement pour ce client"
           />
         )}
         

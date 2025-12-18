@@ -24,7 +24,7 @@ interface ClientsPageProps {
 }
 
 const ClientsPage: React.FC<ClientsPageProps> = ({ navigate }) => {
-  const { clients, loadClients, isLoading } = useClients()
+  const { clients, isLoading } = useClients()
   
   // State
   const [viewMode, setViewMode] = useState<ViewMode>('list')

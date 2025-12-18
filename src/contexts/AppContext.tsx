@@ -627,9 +627,11 @@ Mathilde Fleurs`
           skills: f.specialties || [],
           languages: ['Français'],
           certifications: [],
+          location: f.location || '',
+          avatar: f.avatar || '',
           createdAt: new Date(),
           updatedAt: new Date()
-        })) as Florist[]
+        } as Florist))
       })
 
       if (result.success) {
@@ -682,7 +684,19 @@ Mathilde Fleurs`
     events,
     clients,
     flowers: [],
-    florists: florists.length > 0 ? florists : defaultFlorists,
+    florists: florists.length > 0 ? florists : defaultFlorists.map(f => ({
+      ...f,
+      hourlyRate: 0,
+      experience: 0,
+      completedEvents: 0,
+      skills: f.specialties || [],
+      languages: ['Français'],
+      certifications: [],
+      location: f.location || '',
+      avatar: f.avatar || '',
+      createdAt: new Date(),
+      updatedAt: new Date()
+    } as Florist)),
     isLoading,
     error,
     theme: Theme.LIGHT

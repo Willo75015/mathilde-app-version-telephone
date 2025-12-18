@@ -5,13 +5,16 @@ import { clsx } from 'clsx'
 interface Tab {
   id: string
   label: string
-  content: React.ReactNode
+  content?: React.ReactNode
+  icon?: React.ComponentType<{ className?: string }>
   disabled?: boolean
 }
 
 interface TabsProps {
   tabs: Tab[]
   defaultTab?: string
+  activeTab?: string
+  onChange?: (tabId: string) => void
   className?: string
   variant?: 'default' | 'pills' | 'underline'
 }
@@ -19,11 +22,17 @@ interface TabsProps {
 const Tabs: React.FC<TabsProps> = ({
   tabs,
   defaultTab,
+  activeTab: controlledActiveTab,
+  onChange,
   className,
   variant = 'default'
 }) => {
-  const [activeTab, setActiveTab] = useState(defaultTab || tabs[0]?.id)
-  
+  const [internalActiveTab, setInternalActiveTab] = useState(defaultTab || tabs[0]?.id)
+
+  // Support controlled and uncontrolled modes
+  const activeTab = controlledActiveTab ?? internalActiveTab
+  const setActiveTab = onChange ?? setInternalActiveTab
+
   const currentTab = tabs.find(tab => tab.id === activeTab)
   
   const tabVariants = {
@@ -52,36 +61,43 @@ const Tabs: React.FC<TabsProps> = ({
         variant === 'default' && 'border-b border-gray-200 dark:border-gray-700',
         variant === 'underline' && 'border-b border-gray-200 dark:border-gray-700'
       )}>
-        {tabs.map((tab) => (
-          <motion.button
-            key={tab.id}
-            onClick={() => !tab.disabled && setActiveTab(tab.id)}
-            className={clsx(
-              tabVariants[variant].base,
-              activeTab === tab.id 
-                ? tabVariants[variant].active 
-                : tabVariants[variant].inactive,
-              tab.disabled && 'opacity-50 cursor-not-allowed'
-            )}
-            whileHover={!tab.disabled ? { scale: 1.02 } : {}}
-            whileTap={!tab.disabled ? { scale: 0.98 } : {}}
-            disabled={tab.disabled}
-          >
-            {tab.label}
-          </motion.button>
-        ))}
+        {tabs.map((tab) => {
+          const Icon = tab.icon
+          return (
+            <motion.button
+              key={tab.id}
+              onClick={() => !tab.disabled && setActiveTab(tab.id)}
+              className={clsx(
+                tabVariants[variant].base,
+                activeTab === tab.id
+                  ? tabVariants[variant].active
+                  : tabVariants[variant].inactive,
+                tab.disabled && 'opacity-50 cursor-not-allowed',
+                'flex items-center gap-2'
+              )}
+              whileHover={!tab.disabled ? { scale: 1.02 } : {}}
+              whileTap={!tab.disabled ? { scale: 0.98 } : {}}
+              disabled={tab.disabled}
+            >
+              {Icon && <Icon className="w-4 h-4" />}
+              {tab.label}
+            </motion.button>
+          )
+        })}
       </div>
       
-      {/* Tab Content */}
-      <motion.div
-        key={activeTab}
-        initial={{ opacity: 0, x: 20 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ duration: 0.2 }}
-        className="mt-4"
-      >
-        {currentTab?.content}
-      </motion.div>
+      {/* Tab Content - Only render if content is provided */}
+      {currentTab?.content && (
+        <motion.div
+          key={activeTab}
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.2 }}
+          className="mt-4"
+        >
+          {currentTab.content}
+        </motion.div>
+      )}
     </div>
   )
 }
