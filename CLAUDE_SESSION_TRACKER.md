@@ -86,12 +86,22 @@ npm run type-check       # Vérification TypeScript
 | 2 | Migrer AppContext | ✅ | Double stockage localStorage + Supabase avec fallback |
 | 3 | Sync temps réel | ✅ | Abonnements Supabase Realtime configurés |
 | 4 | Composant SyncStatus | ✅ | Interface pour voir/gérer la synchronisation |
+| 5 | Auto-migration au démarrage | ✅ | Migration automatique localStorage → Supabase si cloud vide |
 
-### Comment activer la synchronisation
+### Comment fonctionne la synchronisation
 
-1. **Créer les tables dans Supabase** : Exécuter le SQL dans `supabase/migrations/001_initial_schema.sql` via l'éditeur SQL de Supabase Dashboard
-2. **Les données se synchronisent automatiquement** : Une fois les tables créées, l'app détecte Supabase et active la sync temps réel
-3. **Migration des données existantes** : Utiliser le bouton "Migrer vers le cloud" dans les paramètres
+1. **Auto-détection au démarrage** : L'app détecte automatiquement si Supabase est configuré
+2. **Auto-migration intelligente** : Si Supabase est vide mais localStorage a des données, migration automatique
+3. **Sync temps réel** : Toute modification est synchronisée en temps réel sur tous les appareils
+4. **Migration manuelle** : Bouton "Migrer vers le cloud" dans les paramètres (si besoin)
+
+### Fonctionnement de l'auto-sync (ajouté le 18/12/2025)
+
+Au démarrage de l'application :
+1. Vérification si Supabase est configuré et accessible
+2. Chargement des données depuis Supabase
+3. Si Supabase est vide ET localStorage contient des données → migration automatique
+4. Configuration des abonnements temps réel pour sync bidirectionnelle
 
 ---
 

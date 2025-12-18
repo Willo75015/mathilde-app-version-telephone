@@ -266,7 +266,105 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     console.log('✅ Abonnements temps réel configurés')
   }, [])
 
-  // INITIALISATION AVEC SUPABASE OU LOCALSTORAGE
+  // Fonction pour vérifier si Supabase est vide
+  const checkSupabaseEmpty = async (): Promise<boolean> => {
+    if (!isSupabaseEnabled()) return true
+    try {
+      const [events, clients] = await Promise.all([
+        supabaseService.getEvents(),
+        supabaseService.getClients()
+      ])
+      return events.length === 0 && clients.length === 0
+    } catch {
+      return true
+    }
+  }
+
+  // Fonction pour vérifier si localStorage a des données
+  const checkLocalStorageHasData = (): boolean => {
+    const storedEvents = localStorage.getItem('mathilde-events')
+    const storedClients = localStorage.getItem('mathilde-clients')
+
+    let hasEvents = false
+    let hasClients = false
+
+    if (storedEvents) {
+      try {
+        const parsed = JSON.parse(storedEvents)
+        hasEvents = Array.isArray(parsed) && parsed.length > 0
+      } catch {
+        hasEvents = false
+      }
+    }
+
+    if (storedClients) {
+      try {
+        const parsed = JSON.parse(storedClients)
+        hasClients = Array.isArray(parsed) && parsed.length > 0
+      } catch {
+        hasClients = false
+      }
+    }
+
+    return hasEvents || hasClients
+  }
+
+  // Fonction pour effectuer l'auto-migration
+  const performAutoMigration = async (): Promise<void> => {
+    const storedEvents = localStorage.getItem('mathilde-events')
+    const storedClients = localStorage.getItem('mathilde-clients')
+    const storedFlorists = localStorage.getItem('mathilde-florists')
+
+    // Migrer les clients d'abord (car les événements peuvent référencer des clients)
+    if (storedClients) {
+      try {
+        const clientsData = JSON.parse(storedClients)
+        if (Array.isArray(clientsData) && clientsData.length > 0) {
+          for (const client of clientsData) {
+            await supabaseService.createClient(client)
+          }
+          console.log(`✅ ${clientsData.length} clients migrés vers Supabase`)
+        }
+      } catch (error) {
+        console.error('❌ Erreur migration clients:', error)
+      }
+    }
+
+    // Migrer les événements
+    if (storedEvents) {
+      try {
+        const eventsData = JSON.parse(storedEvents)
+        if (Array.isArray(eventsData) && eventsData.length > 0) {
+          for (const event of eventsData) {
+            await supabaseService.createEvent(event)
+          }
+          console.log(`✅ ${eventsData.length} événements migrés vers Supabase`)
+        }
+      } catch (error) {
+        console.error('❌ Erreur migration événements:', error)
+      }
+    }
+
+    // Migrer les fleuristes
+    if (storedFlorists) {
+      try {
+        const floristsData = JSON.parse(storedFlorists)
+        if (Array.isArray(floristsData) && floristsData.length > 0) {
+          for (const florist of floristsData) {
+            await supabaseService.createFlorist(florist)
+          }
+          console.log(`✅ ${floristsData.length} fleuristes migrés vers Supabase`)
+        }
+      } catch (error) {
+        console.error('❌ Erreur migration fleuristes:', error)
+      }
+    }
+
+    // Recharger les données depuis Supabase après migration
+    await loadFromSupabase()
+  }
+
+  // INITIALISATION AVEC SUPABASE OU LOCALSTORAGE + AUTO-MIGRATION
   useEffect(() => {
     if (!initRef.current) {
       initRef.current = true
@@ -284,6 +382,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         } else {
           // Configurer les abonnements temps réel
           setupRealtimeSubscriptions()
+
+          // AUTO-MIGRATION: Si Supabase est vide mais localStorage a des données
+          const supabaseEmpty = await checkSupabaseEmpty()
+          const localStorageHasData = checkLocalStorageHasData()
+
+          if (supabaseEmpty && localStorageHasData) {
+            console.log('🔄 Auto-migration: Supabase vide, localStorage a des données...')
+            try {
+              await performAutoMigration()
+              console.log('✅ Auto-migration terminée!')
+            } catch (error) {
+              console.error('❌ Erreur auto-migration:', error)
+            }
+          }
         }
 
         setIsLoading(false)
