@@ -739,7 +739,7 @@ Mathilde Fleurs`
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className={`fixed inset-0 z-50 ${isMobile ? '' : 'bg-black bg-opacity-50 flex items-center justify-center p-4'}`}
+          className={`fixed inset-0 z-[60] ${isMobile ? '' : 'bg-black bg-opacity-50 flex items-center justify-center p-4'}`}
           onClick={isMobile ? undefined : onClose}
         >
           <motion.div
@@ -1377,7 +1377,7 @@ Mathilde Fleurs`
             {/* Footer avec actions - Adapté mobile */}
             <div className={`border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] flex-shrink-0 ${
               isMobile
-                ? 'p-4 pb-6'
+                ? 'sticky bottom-0 z-50 p-4 pb-8 safe-bottom'
                 : 'flex items-center justify-between p-6'
             }`}>
               {/* Stats fleuristes - masqué sur mobile pour gagner de l'espace */}
