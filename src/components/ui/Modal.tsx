@@ -41,7 +41,7 @@ const Modal: React.FC<ModalProps> = ({
   const isMobile = useIsMobile()
   const shouldReduceMotion = useReducedMotion()
 
-  // Fermer avec Escape
+  // Fermer avec Escape + Bloquer scroll sur mobile
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && isOpen) {
@@ -51,14 +51,38 @@ const Modal: React.FC<ModalProps> = ({
 
     if (isOpen) {
       document.addEventListener('keydown', handleEscape)
-      document.body.style.overflow = 'hidden'
+
+      // Sur mobile, bloquer complètement le scroll de la page
+      if (isMobile) {
+        const scrollY = window.scrollY
+        document.body.style.position = 'fixed'
+        document.body.style.top = `-${scrollY}px`
+        document.body.style.left = '0'
+        document.body.style.right = '0'
+        document.body.style.overflow = 'hidden'
+
+        return () => {
+          document.removeEventListener('keydown', handleEscape)
+          document.body.style.position = ''
+          document.body.style.top = ''
+          document.body.style.left = ''
+          document.body.style.right = ''
+          document.body.style.overflow = ''
+          window.scrollTo(0, scrollY)
+        }
+      } else {
+        document.body.style.overflow = 'hidden'
+        return () => {
+          document.removeEventListener('keydown', handleEscape)
+          document.body.style.overflow = ''
+        }
+      }
     }
 
     return () => {
       document.removeEventListener('keydown', handleEscape)
-      document.body.style.overflow = 'unset'
     }
-  }, [isOpen, onClose])
+  }, [isOpen, onClose, isMobile])
 
   const sizes = {
     sm: 'max-w-md',
