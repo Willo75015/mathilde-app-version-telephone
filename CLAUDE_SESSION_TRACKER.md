@@ -34,6 +34,18 @@
 
 ---
 
+## 📋 TÂCHES EN ATTENTE
+
+> **Cette section liste les tâches à faire. Claude doit la consulter en début de session.**
+
+| # | Statut | Tâche | Description |
+|---|--------|-------|-------------|
+| - | - | Aucune tâche en attente | Le projet est à jour |
+
+**Légende :** ⬜ À faire | 🔄 En cours | ✅ Terminé | ❌ Bloqué
+
+---
+
 ## INFRASTRUCTURE & DÉPLOIEMENT
 
 ### Services en production

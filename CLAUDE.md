@@ -7,9 +7,32 @@
 > Ce fichier contient :
 > - L'état actuel du projet
 > - L'historique des sessions précédentes
-> - Les tâches en cours ou à faire
+> - Les tâches à faire (section "TÂCHES EN ATTENTE")
+> - Les tâches terminées
 >
-> **Commencer par lire ce fichier pour comprendre le contexte avant de répondre à l'utilisateur.**
+> **OBLIGATOIRE : Lire ce fichier et faire un résumé à l'utilisateur de l'état du projet.**
+
+---
+
+## 🔄 WORKFLOW OBLIGATOIRE POUR CHAQUE MODIFICATION
+
+### AVANT de modifier le code :
+1. Lire `CLAUDE_SESSION_TRACKER.md`
+2. Ajouter la tâche dans la section "TÂCHES EN ATTENTE" avec statut 🔄
+3. Commit : `git add CLAUDE_SESSION_TRACKER.md && git commit -m "docs: début tâche - [description]" && git push`
+
+### APRÈS avoir modifié le code :
+1. Tester : `npm run build`
+2. Mettre à jour `CLAUDE_SESSION_TRACKER.md` :
+   - Déplacer la tâche de "EN ATTENTE" vers "HISTORIQUE DES SESSIONS"
+   - Marquer comme ✅
+3. Commit tout : `git add -A ':!nul' && git commit -m "[description]" && git push`
+   - Si erreur avec ':!nul', utiliser : `git add [fichiers modifiés]`
+
+### Format des commits :
+- `fix:` pour les corrections de bugs
+- `feat:` pour les nouvelles fonctionnalités
+- `docs:` pour la documentation
 
 ---
 
