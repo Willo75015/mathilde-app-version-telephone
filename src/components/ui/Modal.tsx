@@ -132,7 +132,7 @@ const Modal: React.FC<ModalProps> = ({
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-50">
+        <div className={`fixed inset-0 z-50 ${isMobile ? 'overflow-hidden' : ''}`}>
           {/* Overlay - seulement visible sur desktop */}
           {!isMobile && (
             <motion.div
