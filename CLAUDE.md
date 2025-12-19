@@ -1,5 +1,18 @@
 # Instructions Claude Code - Mathilde Fleurs
 
+## 🚨 PREMIÈRE ACTION À CHAQUE NOUVELLE SESSION
+
+> **AVANT TOUTE CHOSE, LIRE LE FICHIER `CLAUDE_SESSION_TRACKER.md`**
+>
+> Ce fichier contient :
+> - L'état actuel du projet
+> - L'historique des sessions précédentes
+> - Les tâches en cours ou à faire
+>
+> **Commencer par lire ce fichier pour comprendre le contexte avant de répondre à l'utilisateur.**
+
+---
+
 ## RÈGLE ABSOLUE N°1 : NE PAS CASSER L'EXISTANT
 
 > **NE JAMAIS PERTURBER LE BON FONCTIONNEMENT DE L'APPLICATION EXISTANTE**
