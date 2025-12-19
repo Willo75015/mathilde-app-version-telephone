@@ -1,6 +1,6 @@
 # MATHILDE FLEURS - Suivi de Session Claude Code
 
-> **Dernière mise à jour :** 18 décembre 2025
+> **Dernière mise à jour :** 19 décembre 2025
 > **Statut global :** TOUTES LES PHASES TERMINÉES (1-5) + Nouvelles fonctionnalités (100%) + Déploiement cloud
 
 ---
@@ -450,6 +450,18 @@ npm run test
 ---
 
 ## HISTORIQUE DES SESSIONS
+
+### Session 11 - 19 décembre 2025
+
+- ✅ **Fix boutons Valider/Annuler invisibles sur mobile** dans EventModal
+  - Problème : Le modal et la barre de navigation avaient le même z-index (z-50), les boutons étaient cachés sous la barre
+  - Solution : Augmentation du z-index du modal à z-[60] pour couvrir la barre de navigation
+  - Ajout de sticky bottom-0 au footer pour garantir la visibilité des boutons
+
+**Fichier modifié :**
+- `src/components/events/EventModal.tsx`
+
+---
 
 ### Session 10 - 18 décembre 2025
 
