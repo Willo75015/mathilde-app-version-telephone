@@ -251,7 +251,9 @@ const EditFloristModal: React.FC<EditFloristModalProps> = ({
       title="Modifier le fleuriste"
       size="lg"
     >
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className="flex flex-col h-full">
+        {/* Contenu scrollable */}
+        <div className="flex-1 overflow-y-auto space-y-6 pb-20 md:pb-6">
         {/* Informations de base */}
         <Card className="p-4">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center space-x-2">
@@ -590,8 +592,10 @@ const EditFloristModal: React.FC<EditFloristModalProps> = ({
           </div>
         </Card>
 
-        {/* Actions */}
-        <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+        </div>
+
+        {/* Actions - Footer fixe sur mobile */}
+        <div className="fixed bottom-0 left-0 right-0 md:relative md:bottom-auto md:left-auto md:right-auto bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 p-4 flex justify-end space-x-3 z-50">
           <Button
             type="button"
             variant="ghost"
@@ -599,7 +603,7 @@ const EditFloristModal: React.FC<EditFloristModalProps> = ({
           >
             Annuler
           </Button>
-          
+
           <Button
             type="submit"
             variant="primary"
