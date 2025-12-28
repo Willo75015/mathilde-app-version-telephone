@@ -1,0 +1,36 @@
+name: Keep Supabase Alive
+
+# Exécution automatique toutes les 12 heures
+on:
+  schedule:
+    - cron: '0 */12 * * *'  # Toutes les 12 heures
+  workflow_dispatch:  # Permet l'exécution manuelle
+
+jobs:
+  ping-supabase:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase Database
+        env:
+          SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        run: |
+          echo "Pinging Supabase at $(date)"
+
+          RESPONSE=$(curl -s -w "\n%{http_code}" \
+            "${SUPABASE_URL}/rest/v1/clients?select=id&limit=1" \
+            -H "apikey: ${SUPABASE_KEY}" \
+            -H "Authorization: Bearer ${SUPABASE_KEY}")
+
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+          BODY=$(echo "$RESPONSE" | sed '$d')
+
+          echo "HTTP Status: $HTTP_CODE"
+          echo "Response: $BODY"
+
+          if [ "$HTTP_CODE" -ge 200 ] && [ "$HTTP_CODE" -lt 300 ]; then
+            echo "✅ Supabase is alive!"
+          else
+            echo "❌ Supabase ping failed with status $HTTP_CODE"
+            exit 1
+          fi

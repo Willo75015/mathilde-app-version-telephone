@@ -1,5 +1,6 @@
 {
   "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api/$1" },
     { "source": "/(.*)", "destination": "/index.html" }
   ],
   "headers": [
@@ -16,6 +17,12 @@
       "headers": [
         { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
       ]
+    }
+  ],
+  "crons": [
+    {
+      "path": "/api/keep-alive",
+      "schedule": "0 */12 * * *"
     }
   ]
 }

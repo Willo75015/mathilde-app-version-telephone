@@ -28,22 +28,38 @@ export const useAuth = (): UseAuthReturn => {
   // Vérifier la session au chargement
   useEffect(() => {
     if (!isSupabaseEnabled() || !supabase) {
+      console.log('🔓 Auth: Supabase non activé, mode local')
       setState(prev => ({ ...prev, loading: false }))
       return
     }
+
+    // Timeout de sécurité pour éviter le chargement infini (5 secondes)
+    const timeoutId = setTimeout(() => {
+      setState(prev => {
+        if (prev.loading) {
+          console.warn('⚠️ Auth: Timeout - Supabase non accessible, passage en mode local')
+          return { ...prev, loading: false, error: null }
+        }
+        return prev
+      })
+    }, 5000)
 
     // Récupérer la session actuelle - supabase est garanti non-null à ce stade
     const supabaseClient = supabase! // Type assertion après le check initial
     const getSession = async () => {
       try {
+        console.log('🔄 Auth: Vérification session Supabase...')
         const { data: { session }, error } = await supabaseClient.auth.getSession()
 
+        clearTimeout(timeoutId) // Annuler le timeout si on a une réponse
+
         if (error) {
-          console.error('Erreur récupération session:', error)
+          console.error('❌ Auth: Erreur récupération session:', error)
           setState(prev => ({ ...prev, loading: false, error: error.message }))
           return
         }
 
+        console.log('✅ Auth: Session récupérée', session ? 'connecté' : 'non connecté')
         setState({
           user: session?.user ?? null,
           session: session,
@@ -51,7 +67,8 @@ export const useAuth = (): UseAuthReturn => {
           error: null
         })
       } catch (err) {
-        console.error('Erreur getSession:', err)
+        clearTimeout(timeoutId)
+        console.error('❌ Auth: Erreur getSession:', err)
         setState(prev => ({ ...prev, loading: false }))
       }
     }
@@ -61,7 +78,7 @@ export const useAuth = (): UseAuthReturn => {
     // Écouter les changements d'auth
     const { data: { subscription } } = supabaseClient.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('Auth event:', event)
+        console.log('🔑 Auth event:', event)
         setState({
           user: session?.user ?? null,
           session: session,
@@ -72,6 +89,7 @@ export const useAuth = (): UseAuthReturn => {
     )
 
     return () => {
+      clearTimeout(timeoutId)
       subscription.unsubscribe()
     }
   }, [])
