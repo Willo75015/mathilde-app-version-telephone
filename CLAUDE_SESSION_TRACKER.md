@@ -40,7 +40,7 @@
 
 | # | Statut | Tâche | Description |
 |---|--------|-------|-------------|
-| - | - | Aucune tâche en attente | Le projet est à jour |
+| 1 | 🔄 | Lier téléphone au client | Dans EventModal, auto-remplir le téléphone quand un client est sélectionné |
 
 **Légende :** ⬜ À faire | 🔄 En cours | ✅ Terminé | ❌ Bloqué
 
