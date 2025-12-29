@@ -129,10 +129,10 @@ const Layout: React.FC<LayoutProps> = ({ children, navigate, currentPage: propCu
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                Mathilde Dupont
+                Mathilde Babygirl
               </p>
               <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                mathilde@fleurs.com
+                il n'y a pas de problèmes, tu vas trouver les solutions
               </p>
             </div>
           </div>

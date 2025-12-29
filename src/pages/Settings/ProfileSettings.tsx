@@ -13,8 +13,8 @@ import Modal from '@/components/ui/Modal'
 const ProfileSettings: React.FC = () => {
   const [profileData, setProfileData] = useState({
     firstName: 'Mathilde',
-    lastName: 'Dupont',
-    email: 'mathilde@fleurs.com',
+    lastName: 'Babygirl',
+    email: 'il n\'y a pas de problèmes, tu vas trouver les solutions',
     phone: '+33 6 12 34 56 78',
     address: {
       street: '123 Rue des Fleurs',

@@ -8,9 +8,9 @@ export const APP_CONFIG = {
   name: 'Mathilde Fleurs',
   version: '1.0.0',
   description: 'Application PWA pour la gestion d\'événements fleuriste',
-  author: 'Mathilde Dupont',
+  author: 'Mathilde Babygirl',
   website: 'https://mathilde-fleurs.com',
-  email: 'mathilde@fleurs.com',
+  email: 'il n\'y a pas de problèmes, tu vas trouver les solutions',
   phone: '+33 6 12 34 56 78',
   address: {
     street: '123 Rue des Fleurs',
