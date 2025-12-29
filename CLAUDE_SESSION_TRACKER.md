@@ -40,7 +40,8 @@
 
 | # | Statut | Tâche | Description |
 |---|--------|-------|-------------|
-| 1 | 🔄 | Lier téléphone au client | Dans EventModal, auto-remplir le téléphone quand un client est sélectionné |
+| 1 | ✅ | Lier téléphone au client | Dans EventModal, auto-remplir le téléphone quand un client est sélectionné |
+| 2 | 🔄 | Calendrier clients du mois | Afficher les clients du mois en cours selon leurs événements |
 
 **Légende :** ⬜ À faire | 🔄 En cours | ✅ Terminé | ❌ Bloqué
 

@@ -1,29 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react'
-import { AppState, Event, Client, EventStatus, Theme, FloristAvailability, Florist } from '@/types'
+import { AppState, Event, Client, EventStatus, Theme, Florist } from '@/types'
 import { isSupabaseEnabled } from '@/lib/supabase'
 import { supabaseService } from '@/lib/supabase-service'
-
-// Type local pour les fleuristes de l'application (compatible avec l'UI existante)
-interface AppFlorist {
-  id: string
-  firstName: string
-  lastName: string
-  email: string
-  phone: string
-  specialties: string[]
-  experience: string
-  availability: FloristAvailability | 'available' | 'on_mission' | 'unavailable'
-  rating: number
-  isMainFlorist: boolean
-  location?: string
-  avatar?: string
-  unavailabilityPeriods: Array<{
-    id: string
-    startDate: Date
-    endDate: Date
-    reason?: string
-  }>
-}
 
 // Interface du contexte - MODE FULL SUPABASE
 interface AppContextType {
@@ -47,88 +25,6 @@ interface AppContextType {
 }
 
 const AppContext = createContext<AppContextType | null>(null)
-
-// Fleuristes par défaut
-const defaultFlorists: AppFlorist[] = [
-  {
-    id: 'main-florist-bill',
-    firstName: 'Bill',
-    lastName: 'Billsantec',
-    email: 'bill@mathilde-fleurs.com',
-    phone: '+33 6 12 34 56 78',
-    specialties: ['Mariage', 'Événement corporatif', 'Anniversaire'],
-    experience: 'Expert',
-    availability: 'available',
-    rating: 4.9,
-    isMainFlorist: true,
-    unavailabilityPeriods: []
-  },
-  {
-    id: '1',
-    firstName: 'Marie',
-    lastName: 'Dubois',
-    email: 'marie.dubois@mathilde-fleurs.com',
-    phone: '+33 6 23 45 67 89',
-    specialties: ['Mariage', 'Événement corporatif'],
-    experience: 'Expert',
-    availability: 'available',
-    rating: 4.8,
-    isMainFlorist: false,
-    unavailabilityPeriods: []
-  },
-  {
-    id: '2',
-    firstName: 'Paul',
-    lastName: 'Renault',
-    email: 'paul.renault@mathilde-fleurs.com',
-    phone: '+33 6 34 56 78 90',
-    specialties: ['Anniversaire', 'Événement corporatif'],
-    experience: 'Intermédiaire',
-    availability: 'available',
-    rating: 4.5,
-    isMainFlorist: false,
-    unavailabilityPeriods: []
-  },
-  {
-    id: '3',
-    firstName: 'Jean',
-    lastName: 'Moreau',
-    email: 'jean.moreau@mathilde-fleurs.com',
-    phone: '+33 6 45 67 89 01',
-    specialties: ['Baptême', 'Anniversaire'],
-    experience: 'Expert',
-    availability: 'available',
-    rating: 4.7,
-    isMainFlorist: false,
-    unavailabilityPeriods: []
-  },
-  {
-    id: '4',
-    firstName: 'Sophie',
-    lastName: 'Durand',
-    email: 'sophie.durand@mathilde-fleurs.com',
-    phone: '+33 6 56 78 90 12',
-    specialties: ['Mariage', 'Baptême'],
-    experience: 'Expert',
-    availability: 'available',
-    rating: 4.9,
-    isMainFlorist: false,
-    unavailabilityPeriods: []
-  },
-  {
-    id: '5',
-    firstName: 'Jean',
-    lastName: 'Martin',
-    email: 'jean.martin@mathilde-fleurs.com',
-    phone: '+33 6 67 89 01 23',
-    specialties: ['Anniversaire', 'Événement corporatif'],
-    experience: 'Intermédiaire',
-    availability: 'available',
-    rating: 4.6,
-    isMainFlorist: false,
-    unavailabilityPeriods: []
-  }
-]
 
 // ============================================
 // PROVIDER - MODE FULL SUPABASE (pas de localStorage)
@@ -498,19 +394,7 @@ Mathilde Fleurs`
     events,
     clients,
     flowers: [],
-    florists: florists.length > 0 ? florists : defaultFlorists.map(f => ({
-      ...f,
-      hourlyRate: 0,
-      experience: 0,
-      completedEvents: 0,
-      skills: f.specialties || [],
-      languages: ['Français'],
-      certifications: [],
-      location: f.location || '',
-      avatar: f.avatar || '',
-      createdAt: new Date(),
-      updatedAt: new Date()
-    } as Florist)),
+    florists: florists,
     isLoading,
     error,
     theme: Theme.LIGHT
