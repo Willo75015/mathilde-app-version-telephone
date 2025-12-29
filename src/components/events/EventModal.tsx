@@ -1012,19 +1012,19 @@ Mathilde Fleurs`
                       </label>
                       <input
                         type="number"
-                        value={requiredFlorists || ''}
+                        value={requiredFlorists === 0 ? '' : requiredFlorists}
                         onChange={(e) => {
                           const value = e.target.value
                           if (value === '') {
                             updateEventField('floristsRequired', 0)
                           } else {
                             const num = parseInt(value)
-                            if (!isNaN(num) && num >= 0 && num <= 20) {
+                            if (!isNaN(num) && num >= 1 && num <= 20) {
                               updateEventField('floristsRequired', num)
                             }
                           }
                         }}
-                        min="1"
+                        min="0"
                         max="20"
                         className={`w-full px-3 py-2 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 ${
                           !isFloristsRequiredValid
