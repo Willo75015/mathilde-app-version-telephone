@@ -159,9 +159,10 @@ const EventModal: React.FC<EventModalProps> = ({
 }) => {
   const [currentView, setCurrentView] = useState<'details' | 'assignment'>(initialView)
   
-  // 🆕 Récupérer tous les événements pour la détection de conflits
+  // 🆕 Récupérer tous les événements et clients pour la détection de conflits
   const { state } = useApp()
   const allEvents = state.events
+  const allClients = state.clients || []
   
   // Hooks de synchronisation
   const { emitEventSync, syncFloristAssignments } = useEventSync()
@@ -208,7 +209,7 @@ const EventModal: React.FC<EventModalProps> = ({
           budget: 0,
           status: 'draft' as any,
           flowers: [],
-          floristsRequired: 2,
+          floristsRequired: undefined as unknown as number, // Pas de valeur par défaut - obligatoire
           assignedFlorists: [],
           createdAt: new Date(),
           updatedAt: new Date()
@@ -319,8 +320,9 @@ const EventModal: React.FC<EventModalProps> = ({
 
   if (!editedEvent) return null
 
-  // Utiliser editedEvent pour les calculs - AVEC FALLBACKS INTELLIGENTS
-  const requiredFlorists = editedEvent?.floristsRequired || event?.floristsRequired || 2
+  // Utiliser editedEvent pour les calculs - SANS FALLBACK (champ obligatoire)
+  const requiredFlorists = editedEvent?.floristsRequired ?? event?.floristsRequired ?? 0
+  const isFloristsRequiredValid = requiredFlorists > 0
   console.log('🔍 FLEURISTES REQUIS:', {
     editedEventRequired: editedEvent?.floristsRequired,
     eventRequired: event?.floristsRequired,
@@ -631,7 +633,13 @@ Mathilde Fleurs`
   // Sauvegarder les modifications (détails + assignations)
   const handleSave = () => {
     console.log('🔥 EVENTMODAL - handleSave APPELÉ !', { editedEvent: !!editedEvent, onEdit: !!onEdit })
-    
+
+    // Validation: Fleuristes requis obligatoire
+    if (!isFloristsRequiredValid) {
+      console.log('❌ Validation échouée: floristsRequired non défini')
+      return // Bloquer la sauvegarde
+    }
+
     if (editedEvent && onEdit) {
       // Distinguer création vs modification
       const isCreating = !event || event.id.startsWith('temp-')
@@ -1004,13 +1012,33 @@ Mathilde Fleurs`
                       </label>
                       <input
                         type="number"
-                        value={requiredFlorists}
-                        onChange={(e) => updateEventField('floristsRequired', parseInt(e.target.value) || 1)}
+                        value={requiredFlorists || ''}
+                        onChange={(e) => {
+                          const value = e.target.value
+                          if (value === '') {
+                            updateEventField('floristsRequired', 0)
+                          } else {
+                            const num = parseInt(value)
+                            if (!isNaN(num) && num >= 0 && num <= 20) {
+                              updateEventField('floristsRequired', num)
+                            }
+                          }
+                        }}
                         min="1"
                         max="20"
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500"
+                        className={`w-full px-3 py-2 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 ${
+                          !isFloristsRequiredValid
+                            ? 'border-red-500 focus:ring-red-500'
+                            : 'border-gray-300 dark:border-gray-600'
+                        }`}
                         placeholder="Nombre de fleuristes"
                       />
+                      {!isFloristsRequiredValid && (
+                        <p className="text-xs text-red-500 flex items-center gap-1">
+                          <AlertCircle className="w-3 h-3" />
+                          Ce champ est obligatoire
+                        </p>
+                      )}
                       <p className="text-xs text-gray-500 dark:text-gray-400">
                         Nombre de fleuristes nécessaires pour cet événement
                       </p>
@@ -1029,14 +1057,25 @@ Mathilde Fleurs`
                       </label>
                       <select
                         value={editedEvent.clientId}
-                        onChange={(e) => updateEventField('clientId', e.target.value)}
+                        onChange={(e) => {
+                          const selectedClientId = e.target.value
+                          updateEventField('clientId', selectedClientId)
+                          // Auto-remplir le téléphone si un client est sélectionné
+                          if (selectedClientId) {
+                            const selectedClient = allClients.find(c => c.id === selectedClientId)
+                            if (selectedClient?.phone) {
+                              updateEventField('clientPhone', selectedClient.phone)
+                            }
+                          }
+                        }}
                         className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500"
                       >
                         <option value="">Sélectionner un client</option>
-                        <option value="c1">Sophie Pierre</option>
-                        <option value="c2">Julie Marc</option>
-                        <option value="c3">Marie Dubois</option>
-                        <option value="c4">Thomas Laurent</option>
+                        {allClients.map((c) => (
+                          <option key={c.id} value={c.id}>
+                            {c.firstName} {c.lastName}
+                          </option>
+                        ))}
                       </select>
                     </div>
                     

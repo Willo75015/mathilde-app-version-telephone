@@ -32,7 +32,7 @@ const CreateEventModal: React.FC<CreateEventModalProps> = ({
       budget: 0,
       status: EventStatus.DRAFT,
       flowers: [],
-      floristsRequired: 1,
+      floristsRequired: 0, // Pas de valeur par défaut - champ obligatoire
       notes: '',
       createdAt: new Date(),
       updatedAt: new Date()
