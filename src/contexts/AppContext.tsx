@@ -357,7 +357,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       status: eventData.status || EventStatus.DRAFT,
       flowers: eventData.flowers || [],
       assignedFlorists: eventData.assignedFlorists || [],
-      floristsRequired: eventData.floristsRequired || 1,
+      floristsRequired: eventData.floristsRequired, // Validation faite dans le modal
       clientId: eventData.clientId || '',
       createdAt: new Date(),
       updatedAt: new Date()
