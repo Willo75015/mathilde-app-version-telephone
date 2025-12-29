@@ -209,7 +209,7 @@ const EventModal: React.FC<EventModalProps> = ({
           budget: 0,
           status: 'draft' as any,
           flowers: [],
-          floristsRequired: undefined as unknown as number, // Pas de valeur par défaut - obligatoire
+          floristsRequired: 0, // 0 = non défini, validation bloquante
           assignedFlorists: [],
           createdAt: new Date(),
           updatedAt: new Date()

@@ -467,8 +467,17 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ navigate }) => {
                           }}
                         >
                         <div className="flex items-start justify-between mb-2">
-                          <h4 className="font-bold text-purple-900 text-lg flex-1">{event.title}</h4>
-                          
+                          <h4
+                            className="font-bold text-purple-900 text-lg flex-1 cursor-pointer hover:text-blue-600 hover:underline transition-colors"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleEventClick(event)
+                            }}
+                            title="Cliquer pour modifier l'événement"
+                          >
+                            {event.title}
+                          </h4>
+
                           {/* 🎯 BOUTONS D'ACTION avec crayon */}
                           <div className="flex items-center space-x-1 ml-2">
                             <button
