@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useCallback } from 'react'
 import { motion } from 'framer-motion'
-import { Plus, Cloud, CloudOff, RefreshCw } from 'lucide-react'
+import { Plus, Cloud } from 'lucide-react'
 import { useApp } from '@/contexts/AppContext'
 import { Event, EventStatus } from '@/types'
 import EventModal from '../components/events/EventModal'
@@ -28,37 +28,15 @@ interface HomeProps {
 }
 
 const Home: React.FC<HomeProps> = ({ navigate }) => {
-  const { state, actions, isSupabaseMode } = useApp()
+  const { state, actions } = useApp()
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null)
   const [selectedEventForEdit, setSelectedEventForEdit] = useState<Event | null>(null)
   const [selectedEventForFlorist, setSelectedEventForFlorist] = useState<Event | null>(null)
   const [showMoreUrgent, setShowMoreUrgent] = useState(false)
   const [isCreateEventModalOpen, setIsCreateEventModalOpen] = useState(false)
-  const [isMigrating, setIsMigrating] = useState(false)
-  const [migrationMessage, setMigrationMessage] = useState<string | null>(null)
 
   // Hook pour les rappels automatiques
   const remindersData = useReminders(state.events, state.clients)
-
-  // Fonction de migration vers Supabase
-  const handleMigrateToCloud = async () => {
-    if (isMigrating) return
-    setIsMigrating(true)
-    setMigrationMessage(null)
-
-    try {
-      const result = await actions.migrateToSupabase()
-      setMigrationMessage(result.message)
-      if (result.success) {
-        // Rafraîchir après migration
-        setTimeout(() => setMigrationMessage(null), 5000)
-      }
-    } catch (error) {
-      setMigrationMessage(`Erreur: ${error}`)
-    } finally {
-      setIsMigrating(false)
-    }
-  }
 
   // 🚨 Événements urgents : Affichage intelligent selon la demande de Bill
   const urgentEvents = useMemo(() => {
@@ -229,24 +207,10 @@ const Home: React.FC<HomeProps> = ({ navigate }) => {
             {/* Indicateur de synchronisation */}
             {isSupabaseEnabled() && (
               <div className="flex items-center">
-                {isSupabaseMode ? (
-                  <span className="flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs">
-                    <Cloud className="w-3 h-3" />
-                    <span>Sync</span>
-                  </span>
-                ) : (
-                  <button
-                    onClick={handleMigrateToCloud}
-                    disabled={isMigrating}
-                    className="flex items-center gap-1 px-2 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs"
-                  >
-                    {isMigrating ? (
-                      <RefreshCw className="w-3 h-3 animate-spin" />
-                    ) : (
-                      <CloudOff className="w-3 h-3" />
-                    )}
-                  </button>
-                )}
+                <span className="flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs">
+                  <Cloud className="w-3 h-3" />
+                  <span>Sync</span>
+                </span>
               </div>
             )}
           </div>
@@ -260,21 +224,6 @@ const Home: React.FC<HomeProps> = ({ navigate }) => {
             <span>Nouvel événement</span>
           </button>
         </section>
-
-        {/* Message de migration */}
-        {migrationMessage && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className={`p-4 rounded-lg ${
-              migrationMessage.includes('réussie')
-                ? 'bg-green-100 text-green-800 border border-green-200'
-                : 'bg-red-100 text-red-800 border border-red-200'
-            }`}
-          >
-            {migrationMessage}
-          </motion.div>
-        )}
 
         {/* RAPPELS & ALERTES */}
         {remindersData.reminders.length > 0 && (

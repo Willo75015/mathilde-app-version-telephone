@@ -3,7 +3,7 @@ import { motion } from 'framer-motion'
 import {
   Settings, User, Shield, Bell, Palette,
   Globe, Database, Download, Upload, RefreshCw,
-  Cloud, CloudOff, Trash2, AlertTriangle, LogOut
+  Cloud, Trash2, AlertTriangle, LogOut
 } from 'lucide-react'
 import { useTheme } from '@/contexts/ThemeContext'
 import { usePWA } from '@/hooks/usePWA'
@@ -23,13 +23,12 @@ interface SettingsPageProps {
 const SettingsPage: React.FC<SettingsPageProps> = ({ navigate, onSignOut }) => {
   const { theme, setTheme, isDark } = useTheme()
   const { isInstallable, isInstalled, installApp } = usePWA()
-  const { state, actions, isSupabaseMode } = useApp()
+  const { state, actions } = useApp()
   const [showToast, setShowToast] = useState(false)
   const [toastMessage, setToastMessage] = useState('')
   const [toastType, setToastType] = useState<'success' | 'error' | 'warning'>('success')
   const [activeTab, setActiveTab] = useState('general')
   const [showResetModal, setShowResetModal] = useState(false)
-  const [isMigrating, setIsMigrating] = useState(false)
   const [isResetting, setIsResetting] = useState(false)
   const [resetConfirmText, setResetConfirmText] = useState('')
 
@@ -38,25 +37,6 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ navigate, onSignOut }) => {
     setToastMessage(message)
     setToastType(type)
     setShowToast(true)
-  }
-
-  // Migration vers le cloud
-  const handleMigrateToCloud = async () => {
-    if (isMigrating || !isSupabaseEnabled()) return
-    setIsMigrating(true)
-
-    try {
-      const result = await actions.migrateToSupabase()
-      if (result.success) {
-        showNotification(result.message, 'success')
-      } else {
-        showNotification(result.message, 'error')
-      }
-    } catch (error) {
-      showNotification(`Erreur de migration: ${error}`, 'error')
-    } finally {
-      setIsMigrating(false)
-    }
   }
 
   // Réinitialisation complète des données
@@ -79,7 +59,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ navigate, onSignOut }) => {
       keysToRemove.forEach(key => localStorage.removeItem(key))
 
       // 2. Si Supabase est activé, vider aussi les données cloud
-      if (isSupabaseEnabled() && isSupabaseMode) {
+      if (isSupabaseEnabled()) {
         // Note: Les données Supabase nécessitent une migration SQL côté serveur
         // On force juste le rechargement local
         console.log('⚠️ Données locales effacées. Pour vider Supabase, exécuter la migration SQL.')
@@ -309,47 +289,16 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ navigate, onSignOut }) => {
                         État de la synchronisation
                       </h4>
                       <p className="text-sm text-gray-600 dark:text-gray-400">
-                        {isSupabaseMode
-                          ? 'Vos données sont synchronisées avec le cloud'
-                          : 'Vos données sont stockées localement uniquement'}
+                        Vos données sont synchronisées avec le cloud
                       </p>
                     </div>
                     <div>
-                      {isSupabaseMode ? (
-                        <Badge variant="primary" className="flex items-center gap-1">
-                          <Cloud className="w-3 h-3" />
-                          Connecté
-                        </Badge>
-                      ) : (
-                        <Badge variant="secondary" className="flex items-center gap-1">
-                          <CloudOff className="w-3 h-3" />
-                          Local
-                        </Badge>
-                      )}
+                      <Badge variant="primary" className="flex items-center gap-1">
+                        <Cloud className="w-3 h-3" />
+                        Connecté
+                      </Badge>
                     </div>
                   </div>
-
-                  {!isSupabaseMode && (
-                    <div className="flex items-center justify-between p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
-                      <div>
-                        <h4 className="font-medium text-yellow-900 dark:text-yellow-100">
-                          Migrer vers le cloud
-                        </h4>
-                        <p className="text-sm text-yellow-800 dark:text-yellow-200">
-                          Synchronisez vos données entre tous vos appareils
-                        </p>
-                      </div>
-                      <Button
-                        variant="primary"
-                        size="sm"
-                        onClick={handleMigrateToCloud}
-                        disabled={isMigrating}
-                        leftIcon={isMigrating ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Cloud className="w-4 h-4" />}
-                      >
-                        {isMigrating ? 'Migration...' : 'Migrer'}
-                      </Button>
-                    </div>
-                  )}
                 </div>
               </Card>
             )}
